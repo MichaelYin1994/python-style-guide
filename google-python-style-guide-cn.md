@@ -79,7 +79,7 @@ echo.EchoFilter(input, output, delay=0.7, atten=4)
 能够避免模块名冲突以及由于模块搜索路径与作者预期不符而造成的错误引用。让查找模块更简单。
 
 #### 2.3.2 Cons
-让部署代码时有些困难，因为你必须复制包层次结构。不过对于现在的部署机制而言，这其实不是问题。
+让部署代码时有些困难，因为你必须复制包的层次结构。不过对于现在的部署机制而言，这其实不是问题。
 
 #### 2.3.3 建议
 所有的新代码都应该用完整包名来import每个模块。
@@ -124,4 +124,65 @@ import jodie
 异常是一种从正常代码段控制流中跳出以处理错误或者其他异常条件的手段。
 
 #### 2.4.2 Pros
-正常代码的控制流时不会被错误处理代码影响的。异常处理同样允许在某些情况下，控制流跳过多段代码，例如在某一步从N个嵌入函数返回结果而非强行延续错误代码。
+正常代码的控制流时不会被错误处理代码影响的。异常处理同样允许在某些情况下，控制流跳过多段代码，例如在某一步从N个嵌入函数返回结果而非继续执行错误代码。
+
+#### 2.4.3 Cons
+可能会导致让人困惑的控制流。调用库时容易忽略错误情况。 
+
+#### 2.4.4 结论
+异常必定遵循特定条件：
+* 优先合理的使用内置异常类。比如`ValueError`指示了一个类似于这样的程序错误：在方法需要正数的情况下传递了一个负数的错误。不要使用`assert`语句来验证对外的API的参数值的正确性。`assert`是用来保证内部正确性的，它既不是用来强制纠正参数使用，也不是用来指示内部某些意外事件发生的情况。若需要使用异常来指示前述后者的情况，不要用 `assert`，用`raise`语句，例如:
+
+**Yes:**
+``` Python
+def connect_to_next_port(self, minimum):
+    """Connects to the next available port.
+
+    Args:
+        minimum: A port value greater or equal to 1024.
+
+    Returns:
+        The new minimum port.
+
+    Raises:
+        ConnectionError: If no available port is found.
+    """
+    if minimum < 1024:
+        # Note that this raising of ValueError is not mentioned in the doc
+        # string's "Raises:" section because it is not appropriate to
+        # guarantee this specific behavioral reaction to API misuse.
+        raise ValueError(f'Min. port must be at least 1024, not {minimum}.')
+    port = self._find_next_open_port(minimum)
+    if not port:
+        raise ConnectionError(
+            f'Could not connect to service on port {minimum} or higher.')
+    assert port >= minimum, (
+        f'Unexpected port {port} when minimum was {minimum}.')
+    return port
+```
+
+**No:**
+```Python
+def connect_to_next_port(self, minimum):
+    """Connects to the next available port.
+
+    Args:
+    minimum: A port value greater or equal to 1024.
+
+    Returns:
+    The new minimum port.
+    """
+    assert minimum >= 1024, 'Minimum port must be at least 1024.'
+    port = self._find_next_open_port(minimum)
+    assert port is not None
+    return port
+```
+* 模块或包也许会定义它们自己的异常类。当有这种情况的时候，这些异常基类应当从内建的Exception类继承。并且模块的异常基类后缀应该叫做`Error`。
+* 永远不要使用`except:`语句来捕获所有异常，也不要捕获`Exception`或者 `StandardError`，除非：
+  * 你打算重新触发该异常
+  * 你已经在当前线程的最外层（记得还是要打印一条错误消息）。
+
+  在异常这方面，Python非常宽容，`except:`真的会捕获包括变量名拼写错误、调用`sys.exit()`、`Ctrl+C`中断、单元测试失败在内的任何你都不想捕获的错误。使用`except:`很容易隐藏真正的bug。
+
+* 尽量减少`try/except`块中的代码量。`try`块的体积越大，就越容易出现期望之外的异常被捕获的现象。这种情况下，`try/except`块将隐藏真正的错误。
+* 使用`finally`子句来执行那些无论`try`块中有没有异常都应该被执行的代码。这对于清理资源常常很有用，例如关闭文件。

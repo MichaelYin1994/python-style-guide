@@ -9,7 +9,6 @@ Python语言规范
 ================================
 
 ### 2.1 Lint
---------------------
 使用该 [pylintrc](https://google.github.io/styleguide/pylintrc)对你的代码运行`pylint`
 
 #### 2.1.1 定义:
@@ -42,8 +41,8 @@ def viking_cafe_order(spam, beans, eggs=None):
 ```
 其他消除这个告警的方法还有使用`_`标识未使用参数，或者给这些参数名加上前缀 `unused_`，或者直接把它们赋值给`_`。这些方法都是允许的，但是已经不再被鼓励使用。前两种方式会影响到通过参数名传参的调用方式，而最后一种并不能保证参数确实未被使用。
 
-### 2.2 Imports
 --------------------
+### 2.2 Imports
 只在import包和模块的时候使用`import`，而不要用来import单独的类或函数。(这一条对于[typing_module](https://google.github.io/styleguide/pyguide.html#typing-imports)模块的imports例外)
 
 #### 2.2.1 定义：
@@ -71,8 +70,8 @@ echo.EchoFilter(input, output, delay=0.7, atten=4)
 
 从[typing module](https://google.github.io/styleguide/pyguide.html#typing-imports)和[six.moves module](https://six.readthedocs.io/#module-six.moves)进行import不适用上述规则。
 
-### 2.3 包
 --------------------
+### 2.3 包
 使用模块的全路径名来import包(Package)中的每个模块。
 
 #### 2.3.1 Pros
@@ -116,8 +115,8 @@ import jodie
 ```
 不应假定主入口脚本所在的目录就在`sys.path`中，虽然这种情况在一些环境下是存在的。当主入口脚本所在目录不在`sys.path`中时，代码将假设`import jodie`是导入的一个第三方库或者是一个名为`jodie`的顶层包，而不是本地的`jodie.py`。
 
-### 2.4 异常
 --------------------
+### 2.4 异常
 异常处理是允许被使用的，但使用时务必谨慎。
 
 #### 2.4.1 定义
@@ -186,3 +185,107 @@ def connect_to_next_port(self, minimum):
 
 * 尽量减少`try/except`块中的代码量。`try`块的体积越大，就越容易出现期望之外的异常被捕获的现象。这种情况下，`try/except`块将隐藏真正的错误。
 * 使用`finally`子句来执行那些无论`try`块中有没有异常都应该被执行的代码。这对于清理资源常常很有用，例如关闭文件。
+
+--------------------
+### 2.5 全局变量
+避免使用全局变量。
+
+#### 2.5.1 定义
+在模块级别或者作为类属性声明的变量。
+
+#### 2.5.2 Pros
+有些时候有用。
+
+#### 2.5.3 Cons
+在import的过程中，有可能改变模块行为，因为在模块首次被引入的过程中，全局变量就已经被声明。
+
+#### 2.5.4 建议
+避免全局变量。但是鼓励使用模块级的常量，例如`MAX_HOLY_HANDGRENADE_COUNT = 3`。注意常量命名必须全部大写，并用`_`分隔。具体参见[命名规则](https://google.github.io/styleguide/pyguide.html#s3.16-naming)。
+
+------------------------
+### 2.6 嵌套/局部/内部类和函数
+使用内部类或者嵌套函数可以用来覆盖某些局部变量。
+
+#### 2.6.1 定义
+类能够被定义在方法，函数或者类中。函数也能够被定义在方法或函数中。内嵌函数对于封闭作用域中的变量只有可读的权限。（译者注：即内嵌函数可以读外部函数中定义的变量，但是无法改写，除非使用`nonlocal`或者`global`提前进行声明）
+
+#### 2.6.2 Pros
+允许定义仅用于有效范围的工具类和函数，在装饰器中比较常用。 
+
+#### 2.6.3 Cons
+嵌套类或局部类的实例不能序列化（pickled）。内嵌的函数和类无法直接测试，同时内嵌函数和类会使外部函数的可读性变差。
+
+#### 2.6.4 建议
+可以使用内部类或者内嵌函数，但是应当注意一些问题。应该避免使用内嵌函数或类，除非是想覆盖某些值。若想对模块的用户隐藏某个函数，不要采用嵌套它来隐藏，应该在需要被隐藏的方法的模块级名称加`_`前缀，这样它依然是可以被测试的。
+
+------------------------
+### 2.7 列表推导和生成器表达式
+在简单情况下是可用的。
+
+#### 2.7.1 定义
+列表，字典和集合的推导式与生成器（generator）表达式提供了一种简洁高效的方式来创建容器和迭代器（iterators），而不必借助`map()`，`filter()`，或者`lambda`。（译者注: 元组是没有推导式的，`()`内加类似推导式的句式返回的是个生成器）
+
+#### 2.7.2 Pros
+简单的推导表达式创建方式比其他的字典，列表或集合创建方法更加简明清晰。生成器表达式能有很高的效率，因为它避免了一次性生成整个列表。
+
+#### 2.7.3 Cons
+复杂的列表推导或者生成器表达式可能难以阅读。
+
+#### 2.7.4 建议
+列表推导和生成器表达式适用于简单情况。每个部分应该单独置于一行，包括：映射表达式，`for`语句，过滤器表达式。禁止多重`for`语句或过滤器表达式。复杂情况下还是应该使用循环。
+
+**Yes:**
+```Python
+result = [mapping_expr for value in iterable if filter_expr]
+
+result = [{'key': value} for value in iterable
+          if a_long_filter_expression(value)]
+
+result = [complicated_transform(x)
+          for x in iterable if predicate(x)]
+
+descriptive_name = [
+    transform({'key': key, 'value': value}, color='black')
+    for key, value in generate_iterable(some_input)
+    if complicated_condition_is_met(key, value)
+]
+
+result = []
+for x in range(10):
+    for y in range(5):
+        if x * y > 10:
+            result.append((x, y))
+
+return {x: complicated_transform(x)
+        for x in long_generator_function(parameter)
+        if x is not None}
+
+squares_generator = (x**2 for x in range(10))
+
+unique_names = {user.name for user in users if user is not None}
+
+eat(jelly_bean for jelly_bean in jelly_beans
+    if jelly_bean.color == 'black')
+```
+
+**No:**
+```Python
+result = [(x, y) for x in range(10) for y in range(5) if x * y > 10]
+
+return ((x, y, z)
+        for x in xrange(5)
+        for y in xrange(5)
+        if x != y
+        for z in xrange(5)
+        if y != z)
+```
+
+------------------------
+### 2.8 默认迭代器和操作符
+如果类型支持，就使用默认迭代器和操作符。比如列表，字典及文件对象等。
+
+### 2.8.1 定义
+容器类型，例如字典和列表，定义了默认的迭代器和关系测试操作符（`in`和`not in`）。
+
+### 2.8.2 Pros
+默认操作符和迭代器简单且高效。它们直接表达了操作的含义，没有额外的方法调用。使用默认操作符的函数是通用的。它可以用于支持该操作的任何类型。

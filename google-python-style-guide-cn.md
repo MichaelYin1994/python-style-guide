@@ -9,7 +9,7 @@ Python语言规范
 ================================
 
 ### 2.1 Lint
-使用该 [pylintrc](https://google.github.io/styleguide/pylintrc)对你的代码运行`pylint`
+使用该[pylintrc](https://google.github.io/styleguide/pylintrc)对你的代码运行`pylint`
 
 #### 2.1.1 定义:
 `pylint`是一个在Python源代码中查找bug的工具。对于C和C++这样的不那么动态的(译者注: 原文是less dynamic)语言，这些bug通常由编译器来捕获。由于Python的动态特性，有些警告可能不对。不过伪告警应该相对较少。
@@ -80,7 +80,7 @@ echo.EchoFilter(input, output, delay=0.7, atten=4)
 #### 2.3.2 Cons
 让部署代码时有些困难，因为你必须复制包的层次结构。不过对于现在的部署机制而言，这其实不是问题。
 
-#### 2.3.3 建议
+#### 2.3.3 结论
 所有的新代码都应该用完整包名来import每个模块。
 
 import示例应该像这样：
@@ -199,7 +199,7 @@ def connect_to_next_port(self, minimum):
 #### 2.5.3 Cons
 在import的过程中，有可能改变模块行为，因为在模块首次被引入的过程中，全局变量就已经被声明。
 
-#### 2.5.4 建议
+#### 2.5.4 结论
 避免全局变量。但是鼓励使用模块级的常量，例如`MAX_HOLY_HANDGRENADE_COUNT = 3`。注意常量命名必须全部大写，并用`_`分隔。具体参见[命名规则](https://google.github.io/styleguide/pyguide.html#s3.16-naming)。
 
 ------------------------
@@ -215,7 +215,7 @@ def connect_to_next_port(self, minimum):
 #### 2.6.3 Cons
 嵌套类或局部类的实例不能序列化（pickled）。内嵌的函数和类无法直接测试，同时内嵌函数和类会使外部函数的可读性变差。
 
-#### 2.6.4 建议
+#### 2.6.4 结论
 可以使用内部类或者内嵌函数，但是应当注意一些问题。应该避免使用内嵌函数或类，除非是想覆盖某些值。若想对模块的用户隐藏某个函数，不要采用嵌套它来隐藏，应该在需要被隐藏的方法的模块级名称加`_`前缀，这样它依然是可以被测试的。
 
 ------------------------
@@ -231,7 +231,7 @@ def connect_to_next_port(self, minimum):
 #### 2.7.3 Cons
 复杂的列表推导或者生成器表达式可能难以阅读。
 
-#### 2.7.4 建议
+#### 2.7.4 结论
 列表推导和生成器表达式适用于简单情况。每个部分应该单独置于一行，包括：映射表达式，`for`语句，过滤器表达式。禁止多重`for`语句或过滤器表达式。复杂情况下还是应该使用循环。
 
 **Yes:**
@@ -281,11 +281,160 @@ return ((x, y, z)
 ```
 
 ------------------------
-### 2.8 默认迭代器和操作符
-如果类型支持，就使用默认迭代器和操作符。比如列表，字典及文件对象等。
+### 2.8 默认迭代操作符和操作符
+如果类型支持，就使用默认迭代操作符（iterators）和操作符（operators）。比如列表，字典及文件对象等。（译者注：此处的iterators应当被翻译为迭代操作符，与后续关系操作符对应，例如`for`语句用来迭代容器对象）
 
 ### 2.8.1 定义
-容器类型，例如字典和列表，定义了默认的迭代器和关系测试操作符（`in`和`not in`）。
+容器类型，例如字典和列表，定义了默认的迭代操作符和关系测试操作符（`in`和`not in`）。
 
 ### 2.8.2 Pros
 默认操作符和迭代器简单且高效。它们直接表达了操作的含义，没有额外的方法调用。使用默认操作符的函数是通用的。它可以用于支持该操作的任何类型。
+
+### 2.8.3 Cons
+你没法通过阅读方法名来区分对象的类型（例如，`has_key()`意味着字典）。不过这也是优点。
+
+### 2.8.4 结论
+如果类型支持，就使用默认迭代操作符和操作符，例如列表，字典和文件。内建类型也定义了迭代器方法。优先考虑这些方法，而不是那些返回列表的方法。当然，这样遍历容器时，你将不能修改容器。除非必要，否则不要使用诸如`dict.iter*()`这类python2的特定迭代方法。
+
+**Yes:**
+```Python
+for key in adict: ...
+if key not in adict: ...
+if obj in alist: ...
+for line in afile: ...
+for k, v in dict.iteritems(): ...
+```
+
+**No:**
+```Python
+for key in adict.keys(): ...
+if not adict.has_key(key): ...
+for line in afile.readlines(): ...
+```
+
+------------------------
+### 2.9 生成器
+按需使用生成器。
+
+#### 2.9.1 定义
+生成器函数返回一个迭代器，并且每次执行`yield`语句的时候生成一个值。在生成一个值之后，生成器函数的运行状态被挂起，直到下一次生成。
+
+#### 2.9.2 Pros
+简化代码，因为每次调用时局部变量和控制流的状态都会被保存。比起一次创建一系列值的函数，生成器占用的内存更少。
+
+#### 2.9.3 Cons
+没有。
+
+#### 2.9.4 结论
+鼓励使用。注意在生成器函数的文档字符串中使用`Yields:`而不是`Returns:`。
+
+------------------------
+### 2.10 Lambda函数
+适用于单行函数。
+
+#### 2.10.1 定义:
+与声明式函数相反，Lambda函数在表达式中定义匿名函数。常用于为`map()`和`filter()`之类的高阶函数定义回调函数或者操作符。
+
+#### 2.10.2 优点:
+方便。
+
+#### 2.10.3 缺点:
+比局部函数更难读懂和debug，匿名性意味着堆栈跟踪更难懂。表达性受限因为lambda函数只包含一个表达式。
+
+#### 2.10.4 结论:
+适用于单行函数。如果代码超过60-80个字符，最好还是定义成常规（嵌套）函数。
+
+对于常见的操作符，例如乘法操作符，使用`operator`模块中的函数以代替lambda函数。例如，推荐使用`operator.mul`，而不是`lambda x, y: x * y`。 
+
+------------------------
+### 2.11 条件表达式
+简单情况下可以使用。
+
+#### 2.11.1 定义
+条件表达式（又名三元运算符）是对于if语句的一种更为简短的句法规则。例如：`x = 1 if cond else 2`。
+
+#### 2.11.2 Pros
+比if语句更加简短和方便。
+
+#### 2.11.3 Cons
+比if语句难于阅读。如果if表达式很长，有时会难以定位条件位置。
+
+#### 2.11.4 结论：
+简单情况可以使用。条件表达式的每一个部分都必须在一行内完成（包括真值表达式，if表达式，else表达式）。当处理的情况比较复杂时，使用完整的if语句。
+
+**Yes:**
+```Python
+one_line = 'yes' if predicate(value) else 'no'
+slightly_split = ('yes' if predicate(value)
+                  else 'no, nein, nyet')
+the_longest_ternary_style_that_can_be_done = (
+    'yes, true, affirmative, confirmed, correct'
+    if predicate(value)
+    else 'no, false, negative, nay')
+```
+
+**No:**
+```Python
+bad_line_breaking = ('yes' if predicate(value) else
+                     'no')
+portion_too_long = ('yes'
+                    if some_long_module.some_long_predicate_function(
+                        really_long_variable_name)
+                    else 'no, false, negative, nay')
+```
+
+### 2.12 默认参数值
+大多数情况下都OK。
+
+#### 2.12.1 定义
+你可以在函数参数列表的最后指定变量的值，例如，`def foo(a, b = 0):`。如果调用`foo`时只带一个参数，则b被设为0。如果带两个参数，则b的值等于第二个参数。
+
+#### 2.12.2 Pros
+ 经常有一些函数使用了大量的默认参数，但很少你会有修改这些默认值的情况。默认参数值提供了一种简单的方法来完成这件事，你不需要为这些罕见的例外定义大量函数。同时, Python也不支持重载方法和函数。默认参数是一种“仿造”重载行为的简单方式。
+
+#### 2.12.3 Cons
+默认参数只在模块加载时进行一次求值。如果参数是列表或字典之类的可变类型，这就会出现问题，如果函数修改了默认参数的对象（例如向列表执行`append`操作）, 默认值就被修改了。
+
+#### 2.12.4 结论：
+鼓励使用, 不过有如下注意事项：
+
+不要在函数或方法定义中使用可变对象作为参数的默认值。
+
+**Yes:**
+```Python
+Yes: def foo(a, b=None):
+         if b is None:
+             b = []
+Yes: def foo(a, b: Optional[Sequence] = None):
+         if b is None:
+             b = []
+Yes: def foo(a, b: Sequence = ()):  # Empty tuple OK since tuples are immutable
+```
+
+**No:**
+```Python
+No:  def foo(a, b=[]):
+     ...
+No:  def foo(a, b=time.time()):  # The time the module was loaded???
+     ...
+No:  def foo(a, b=FLAGS.my_thing):  # sys.argv has not yet been parsed...
+     ...
+No:  def foo(a, b: Mapping = {}):  # Could still get passed to unchecked code
+    ...
+```
+
+--------------------
+### 2.13 特性（properties）
+（译者注：参照fluent python，这里将"property"译为"特性"，而"attribute"译为属性。python中数据的属性和处理数据的方法统称**属性（arrtibute）**，而在不改变类接口的前提下用来修改数据属性的存取方法我们称为**特性（property）**。）
+
+使用属性可以通过简单而轻量级的访问器（getter）和设定器（setter）方法来访问或设定数据。
+
+#### 2.13.1 定义
+一种装饰器方法，在计算比较轻量级的时候，作为标准的属性访问方法来获取和设定一个属性的方式。
+
+#### 2.13.2 Pros
+通过消除对于简单属性访问的显式的get和set方法调用，来提升代码的可读性。允许惰性计算（译者注：应当指yield语句）。使用Pythonic的方式来维护类的接口。就性能而言，当直接访问变量是合理的，添加访问方法就显得琐碎而无意义。使用特性（properties）可以绕过这个问题，将来也可以在不破坏接口的情况下将访问方法加上（译者注：为变量添加装饰器@propetry后，仍然可以构建一个访问方法来返回该变量的值而不破坏整体接口的构造）。
+
+#### 2.13.3 Cons
+特性(properties)是在get和set方法声明后指定, 这需要使用者在接下来的代码中注意: set和get是用于特性(properties)的(除了用 ``@property`` 装饰器创建的只读属性).  必须继承自object类. 可能隐藏比如操作符重载之类的副作用. 继承时可能会让人困惑. 
+    (译者注:这里没有修改原始翻译,其实就是 @property 装饰器是不会被继承的)

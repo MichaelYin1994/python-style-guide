@@ -716,7 +716,7 @@ a: SomeType = some_func()
 ```
 在必须支持老版本Python运行的代码中则可以这样注释：
 ```Python
-a = some_func() #type: SomeType
+a = some_func()  #type: SomeType
 ```
 
 #### 2.21.2 Pros

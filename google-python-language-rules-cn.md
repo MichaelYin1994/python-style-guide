@@ -9,7 +9,7 @@ Python语言规范
 ================================
 
 ### 2.1 Lint
-使用该[pylintrc](https://google.github.io/styleguide/pylintrc)对你的代码运行`pylint`
+使用该[pylintrc](https://google.github.io/styleguide/pylintrc)对你的代码运行`pylint`。
 
 #### 2.1.1 定义:
 `pylint`是一个在Python源代码中查找bug的工具。对于C和C++这样的不那么动态的（译者注: 原文是less dynamic）语言，这些bug通常由编译器来捕获。由于Python的动态特性，有些警告可能不对。不过伪告警应该相对较少。
@@ -635,13 +635,95 @@ class C(object):
 装饰器可以在函数的参数或返回值上执行任何操作，这可能导致出人意料的隐藏操作行为。此外，装饰器在import的时候就被执行。从装饰器代码中捕获错误并处理是很困难的。
 
 #### 2.17.4 结论：
-如果好处很显然，就明智而谨慎的使用装饰器。装饰器应该遵守和函数一样的导入和命名规则。装饰器的python文档应该清晰的说明该函数是一个装饰器。请为装饰器编写单元测试。 
+如果好处很明显，就明智而谨慎的使用装饰器。装饰器应该遵守和函数一样的导入和命名规则。装饰器的python文档应该清晰的说明该函数是一个装饰器。请为装饰器编写单元测试。 
 
-避免装饰器自身对外界的依赖（即不要依赖于文件，socket，数据库连接等），因为装饰器运行时这些资源可能不可用(由`pydoc`或其它工具导入). 应该保证一个用有效参数调用的装饰器在所有情况下都是成功的.
+避免装饰器自身对外界的依赖（即不要依赖于文件，socket，数据库连接等），因为装饰器运行时这些资源可能不可用（由`pydoc`或其它工具导入）。应该保证一个用有效参数调用的装饰器在所有情况下都是成功的。
+
+装饰器是一种特殊形式的“顶级代码”，参考后面关于[main](https://google.github.io/styleguide/pyguide.html#s3.17-main)的话题。
+
+除非是为了将方法和现有的API集成，否则不要使用`staticmethod`。多数情况下，将方法封装成模块级的函数可以达到同样的效果。谨慎使用`classmethod`。通常只在定义备选构造函数，或者写用于修改诸如进程级缓存等必要的全局状态的特定类方法才用。
+
+--------------------
+### 2.18 线程
+不要依赖于内建类型的原子性。
+
+尽管Python内置数据类型例如字典等似乎有原子性操作，仍有一些罕见情况下，他们是非原子的（比如,如果`__hash__`或者`__eq__`被实现为Python方法），就不应该依赖于这些类型的原子性。也不应该依赖于原子变量赋值（因为这依赖于字典）。
+
+优先使用Queue模块的`Queue`类来作为线程之间通讯数据的方式。此外，要是用threading模块和其locking primitives（锁原语）。了解条件变量的合理用法以便于使用`threading.Condition`而非使用更低级的锁。
+
+--------------------
+### 2.19 威力过大的特性
+尽量避免使用。
+
+#### 2.19.1 定义
+Python是一种非常灵活的语言，并且提供了很多花哨的特性，诸如定制元类（custom metaclasses），访问字节码（access to bytecode），动态编译（on-the-fly compilation），动态继承（dynamic inheritance），对象父类重定义（object reparenting），import hacks，反射（reflection）（例如一些对于`getattr()`的应用），系统内置的修改（modification of system internals）等等。
+
+#### 2.19.2 Pros
+这些是非常强大的语言特性。可以让程序更紧凑。
+
+#### 2.19.3 Cons
+在你的代码中避免这些特性。
+
+当然，利用了这些特性的来编写的一些标准库是值得去使用的，比如`abc.ABCMeta`，`collection.namedtuple`，`dataclasses`，`enum`等。
+
+--------------------
+### 2.20 新版本Python：Python3和从 `__future__` import
+Python 3已经发布了！虽然不是每一个项目都已经准备好使用Python 3了，但是所有代码应该以Python 3兼容的方式进行编写（并且尽量在Python 3的环境下进行测试）。
+
+#### 2.20.1 定义
+python 3是python语言的一个重大改进版本，虽然已有大量代码是python 2.7写的，但是通过一些简单的调整就可以使得代码的表意更加简明，因此最好为了在Python 3环境下进行运行做准备。
+
+#### 2.20.2 Pros
+一旦项目依赖都就绪，那么使用python 3写的代码更加清晰并且方便运行。
+
+#### 2.20.3 Cons
+导入一些看上去实际用不到的模块到代码里显得有些奇怪。
+
+#### 2.20.4 结论：
+
+**from __future__ imports**
+
+鼓励使用`from __future__ import`语句。所有新代码都应该包含下述代码，而现有代码应该被更新以尽可能兼容：
+```Python
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+```
+如果你不太熟悉这些,详细阅读这些：[绝对import](https://www.python.org/dev/peps/pep-0328/)，[新的`/`除法行为](https://www.python.org/dev/peps/pep-0238/)，和[`print`函数](https://www.python.org/dev/peps/pep-3105/)
+
+除非代码是只在Python 3下运行，否则不要忽略或者移除以上的导入，即使他们在这个模块中没有用。最好在所有文件里都保留这样的导入，这样若有人用到了这些特性时，后续编辑时不会忘记导入。
     
-    装饰器是一种特殊形式的"顶级代码". 参考后面关于 :ref:`Main <main>` 的话题. 
+还有其他的一些来自`from __future__`的语句。请在你认为合适的地方使用它们。本文没有推荐`unicode_literals`，因为我们认为它不是很棒的改进，它在Python 2.7中大量引入例隐式的默认编码转换。大多数情况下还是推荐显式的使用`b`和`u`以及unicode字符串来显式的指示编码转换。
 
-    除非是为了将方法和现有的API集成，否则不要使用 ``staticmethod`` .多数情况下，将方法封装成模块级的函数可以达到同样的效果.
+**The six, future, or past libraries**
 
-    谨慎使用 ``classmethod`` .通常只在定义备选构造函数，或者写用于修改诸如进程级缓存等必要的全局状态的特定类方法才用。
+当项目需要支持Python 2和3时，根据需求使用[six](https://pypi.org/project/six/),[future](https://pypi.org/project/future/)和[past](https://pypi.org/project/past/)。这些库可以使代码更加清晰和简单。
 
+--------------------
+### 2.21 代码类型注释
+可以根据[PEP-484](https://www.python.org/dev/peps/pep-0484/)对Python 3代码进行类型注释，并且在build时用类型检查工具例如[pytype](https://github.com/google/pytype)进行类型检查。
+
+类型注释可以在源码中或在[stub pyi file](https://www.python.org/dev/peps/pep-0484/#stub-files)中。只要可能，注释就应写在源代码中。对于第三方模块或拓展模块使用pyi文件。
+
+#### 2.21.1 定义
+类型注释（也称为“类型提示”）是用于函数或方法参数和返回值的：
+```Python
+def func(a: int) -> List[int]:
+```
+也可以使用[PEP-526](https://www.python.org/dev/peps/pep-0526/)中的语法来声明变量类型:
+```Python
+a: SomeType = some_func()
+```
+在必须支持老版本Python运行的代码中则可以这样注释：
+```Python
+a = some_func() #type: SomeType
+```
+
+#### 2.21.2 Pros
+类型注释提升代码的可读性和可维护性。类型检查会将很多运行错误转化为构建错误，也减少了使用[过于强力特性](https://google.github.io/styleguide/pyguide.html#power-features)的能力。
+
+#### 2.21.3 Cons
+需要不断更新类型声明，对于自认为正确的代码可能会报类型错误，使用[类型检查](https://github.com/google/pytype)可能减少使用[过于强力特性](https://google.github.io/styleguide/pyguide.html#power-features)的能力。
+
+#### 2.21.4 建议
+强烈鼓励在更新代码的时候进行Python类型分析。在对公共API进行补充和修改时，包括Python类型声明并通过构建系统中的pytype进行检查。对Python来说静态类型检查比较新，我们承认，一些意料外的副作用（例如错误推断的类型）可能拒绝一些项目的使用。这种情况下，鼓励作者适当地增加一个带有TODO或到bug描述当前不接受的类型注释的链接到BUILD文件或者在代码内。

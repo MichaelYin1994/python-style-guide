@@ -12,7 +12,7 @@ Python语言规范
 使用该[pylintrc](https://google.github.io/styleguide/pylintrc)对你的代码运行`pylint`
 
 #### 2.1.1 定义:
-`pylint`是一个在Python源代码中查找bug的工具。对于C和C++这样的不那么动态的(译者注: 原文是less dynamic)语言，这些bug通常由编译器来捕获。由于Python的动态特性，有些警告可能不对。不过伪告警应该相对较少。
+`pylint`是一个在Python源代码中查找bug的工具。对于C和C++这样的不那么动态的（译者注: 原文是less dynamic）语言，这些bug通常由编译器来捕获。由于Python的动态特性，有些警告可能不对。不过伪告警应该相对较少。
 
 #### 2.1.2 优点:
 可以捕获容易忽视的错误，例如输入错误，使用未赋值的变量等。
@@ -436,5 +436,212 @@ No:  def foo(a, b: Mapping = {}):  # Could still get passed to unchecked code
 通过消除对于简单属性访问的显式的get和set方法调用，来提升代码的可读性。允许惰性计算（译者注：应当指yield语句）。使用Pythonic的方式来维护类的接口。就性能而言，当直接访问变量是合理的，添加访问方法就显得琐碎而无意义。使用特性（properties）可以绕过这个问题，将来也可以在不破坏接口的情况下将访问方法加上（译者注：为变量添加装饰器@propetry后，仍然可以构建一个访问方法来返回该变量的值而不破坏整体接口的构造）。
 
 #### 2.13.3 Cons
-特性(properties)是在get和set方法声明后指定, 这需要使用者在接下来的代码中注意: set和get是用于特性(properties)的(除了用 ``@property`` 装饰器创建的只读属性).  必须继承自object类. 可能隐藏比如操作符重载之类的副作用. 继承时可能会让人困惑. 
-    (译者注:这里没有修改原始翻译,其实就是 @property 装饰器是不会被继承的)
+在Python2中必须继承自`object`类。可能隐藏比如操作符重载之类的副作用。继承时，对于子类而言可能会让人困惑。（译者注：这里没有修改原始翻译，其实就是`@property`装饰器是不会被继承的）
+
+#### 2.13.4 结论：
+在你的新代码中，对于你会使用和轻量级的访问与设定方法的地方，使用属性来进行访问与设定数据。属性应当使用`@property`[装饰器](https://google.github.io/styleguide/pyguide.html#s2.17-function-and-method-decorators)来进行创建。
+
+如果子类没有覆盖属性，那么属性的继承可能看上去不明显。因此使用者必须确保访问方法间接被调用，以保证子类中的重载方法被属性调用（使用模板方法设计模式）。
+
+**Yes:**
+```Python
+class Square(object):
+    """A square with two properties: a writable area and a read-only perimeter.
+
+    To use:
+    >>> sq = Square(3)
+    >>> sq.area
+    9
+    >>> sq.perimeter
+    12
+    >>> sq.area = 16
+    >>> sq.side
+    4
+    >>> sq.perimeter
+    16
+    """
+
+    def __init__(self, side):
+        self.side = side
+
+    @property
+    def area(self):
+        """Area of the square."""
+        return self._get_area()
+
+    @area.setter
+    def area(self, area):
+        return self._set_area(area)
+
+    def _get_area(self):
+        """Indirect accessor to calculate the 'area' property."""
+        return self.side ** 2
+
+    def _set_area(self, area):
+        """Indirect setter to set the 'area' property."""
+        self.side = math.sqrt(area)
+
+    @property
+    def perimeter(self):
+        return self.side * 4
+```
+
+--------------------
+### 2.14 True/False表达式求值
+尽可能使用“隐式”的false。
+
+#### 2.14.1 定义
+Python在布尔上下文中会将某些特定值求值为false。一条快速的“经验原则”是, 所有的“空”值都被认为是false。因此0，None，[]，{}，""都被认为是false。
+
+#### 2.14.2 Pros
+使用Python布尔类型的条件语句可读性更好而且更难出错，大多数情况下，这种方式也更高效。
+
+#### 2.14.3 Cons
+对于C/C++开发者而言可能有些奇怪。
+
+#### 2.14.4 结论：
+如果可能的话，使用“隐式”的False。例如使用`if foo:`，而非`if foo != []:`。下面列举了一些你应该牢记的注意事项：
+* 总是使用`if foo is None:`（或者`is not None`）来检测`None`值。例如，当测试一个变量或者参数默认值是否由`None`被设置为其他值。这个值在布尔语义下可能是false！（译者注：`is`比较的是对象的id()，这个函数返回的通常是对象的内存地址，考虑到CPython的对象重用机制，可能会出现生命周不重叠的两个对象会有相同的id）
+* 永远不要用`==`将一个布尔变量与`False`相比较。反之应当使用`if not x:`替代。如果你需要区分`False`与`None`，那么你应该用`if not x and x is not None`。
+* 对于序列类型（字符串，列表，元组），使用空序列是false的原则。因此，`if seq:`与`if not seq:`分别比`if len(seq):`与`if not len(seq):`更好。
+* 当处理整数时，“隐式”的false相比较优势而言也许会带来更大的风险（也就是说，一不小心将`None`和0进行了相同的处理）。你可以将一个已知是整型（且不是len()的返回结果）的值与0比较。
+
+**Yes:**
+```Python
+if not users:
+    print('no users')
+
+if foo == 0:
+    self.handle_zero()
+
+if i % 10 == 0:
+    self.handle_multiple_of_ten()
+
+def f(x=None):
+    if x is None:
+        x = []
+```
+
+**No:**
+```Python
+if len(users) == 0:
+    print('no users')
+
+if foo is not None and not foo:
+    self.handle_zero()
+
+if not i % 10:
+    self.handle_multiple_of_ten()
+
+def f(x=None):
+    x = x or []
+```
+* 注意`'0'`（即`0`字符串）会被当做true。
+
+--------------------
+### 2.15 过时的语言特性
+尽可能利用字符串方法替代字符串模块（`string`模块）。使用函数调用语法取代`apply`。使用列表推导与`for`循环替代`filter`与`map`当函数的参数大概率是一个行内lambda表达式的时候（译者注：使用[lambda x: x+2 for x in seq]而不是map(lambda x: x+2, seq)）。用`for`循环替代`reduce`。
+
+#### 2.15.1 Pros
+当前Python版本提供了人们普遍更倾向的构建方式。
+
+#### 2.15.2 Cons
+我们不使用任何不支持这些特性的Python版本，因而没有理由不使用新方式。
+
+**Yes:**
+```Python
+words = foo.split(':')
+
+[x[1] for x in my_list if x[2] == 5]
+
+map(math.sqrt, data)  # Ok. No inlined lambda expression.
+
+fn(*args, **kwargs)
+```
+
+**No:**
+```Python
+words = string.split(foo, ':')
+
+map(lambda x: x[1], filter(lambda x: x[2] == 5, my_list))
+
+apply(fn, args, kwargs)
+```
+
+--------------------
+### 2.16 词法作用域（Lexical Scoping）
+可以使用。
+
+#### 2.16.1 定义
+一个内嵌Python函数可以引用在闭包命名空间内定义的变量，但是不能对其赋值。变量绑定的解析基于的是词法作用域，即基于静态程序文本。任何对块内某个变量的赋值都会导致Python将所有对该名称的引用当做局部变量，即使使用先于赋值操作。如果有全局声明，那么改名称就会被认为是全局变量。
+
+一个使用这个特性的例子是：
+```Python
+def get_adder(summand1):
+    """Returns a function that adds numbers to a given number."""
+    def adder(summand2):
+        return summand1 + summand2
+
+    return adder
+```
+
+#### 2.16.2 Pros
+通常可以带来更清晰、优雅的代码。尤其会让有经验的Lisp和Scheme（以及Haskell和ML还有其他）的程序员感到欣慰。
+
+#### 2.16.3 Cons
+可能会导致令人迷惑的bug。例如这个基于[PEP-0227](http://www.google.com/url?sa=D&q=http://www.python.org/dev/peps/pep-0227/)的例子.
+
+```Python
+i = 4
+def foo(x):
+    def bar():
+        print(i, end='')
+    # ...
+    # A bunch of code here
+    # ...
+    for i in x:  # Ah, i *is* local to foo, so this is what bar sees
+        print(i, end='')
+    bar()
+```
+所以`foo([1, 2, 3])`会打印`1 2 3 3`而非`1 2 3 4`。
+
+#### 2.16.4 建议
+可以使用
+
+--------------------
+### 2.17 函数和方法装饰器
+在明显有好处时，谨慎明智的使用装饰器。避免使用`@staticmethod`，控制使用`@classmethod`。
+
+### 2.17.1 定义
+[函数和方法装饰器](https://docs.python.org/3/glossary.html#term-decorator)（也就是`@`记号）。最常见的装饰器是`@property`，用来将常规方法转换为动态可计算的属性。但是，装饰器语法也允许用户定义装饰器。特别地，对于一些函数，例如`my_function`：
+```Python
+class C(object):
+    @my_decorator
+    def method(self):
+        # method body ...
+```
+等效于
+```Python
+class C(object):
+    def method(self):
+        # method body ...
+    method = my_decorator(method)
+```
+
+#### 2.17.2 Pros
+能够优雅的对方法进行某种转换，并且该转换可能减少一些重复代码，并强化不变性等等。
+
+#### 2.17.3 Cons
+装饰器可以在函数的参数或返回值上执行任何操作，这可能导致出人意料的隐藏操作行为。此外，装饰器在import的时候就被执行。从装饰器代码中捕获错误并处理是很困难的。
+
+#### 2.17.4 结论：
+如果好处很显然，就明智而谨慎的使用装饰器。装饰器应该遵守和函数一样的导入和命名规则。装饰器的python文档应该清晰的说明该函数是一个装饰器。请为装饰器编写单元测试。 
+
+避免装饰器自身对外界的依赖（即不要依赖于文件，socket，数据库连接等），因为装饰器运行时这些资源可能不可用(由`pydoc`或其它工具导入). 应该保证一个用有效参数调用的装饰器在所有情况下都是成功的.
+    
+    装饰器是一种特殊形式的"顶级代码". 参考后面关于 :ref:`Main <main>` 的话题. 
+
+    除非是为了将方法和现有的API集成，否则不要使用 ``staticmethod`` .多数情况下，将方法封装成模块级的函数可以达到同样的效果.
+
+    谨慎使用 ``classmethod`` .通常只在定义备选构造函数，或者写用于修改诸如进程级缓存等必要的全局状态的特定类方法才用。
+

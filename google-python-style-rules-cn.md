@@ -107,4 +107,188 @@ return (foo)
 ### 3.4 缩进
 缩进用4个空格。
 
-缩进代码段不要使用制表符，或者混用制表符和空格。如果连接多行，多行应垂直对齐，或者再次4空格缩进（这个情况下首行括号后应该不包含代码）。
+缩进代码段不要使用制表符，或者混用制表符和空格。如果连接多行，多行应垂直对齐，或者再次4空格缩进，这个情况下首行括号后应该不包含代码。
+
+**Yes:**
+```Python
+# Aligned with opening delimiter
+foo = long_function_name(var_one, var_two,
+                         var_three, var_four)
+meal = (spam,
+        beans)
+
+# Aligned with opening delimiter in a dictionary
+foo = {
+    long_dictionary_key: value1 +
+                         value2,
+    ...
+}
+
+# 4-space hanging indent; nothing on first line
+foo = long_function_name(
+    var_one, var_two, var_three,
+    var_four)
+meal = (
+    spam,
+    beans)
+
+# 4-space hanging indent in a dictionary
+foo = {
+    long_dictionary_key:
+        long_dictionary_value,
+    ...
+}
+```
+
+**No:**
+```Python
+# Stuff on first line forbidden
+foo = long_function_name(var_one, var_two,
+    var_three, var_four)
+meal = (spam,
+    beans)
+
+# 2-space hanging indent forbidden
+foo = long_function_name(
+  var_one, var_two, var_three,
+  var_four)
+
+# No hanging indent in a dictionary
+foo = {
+    long_dictionary_key:
+    long_dictionary_value,
+    ...
+}
+```
+
+#### 3.4.1 序列元素尾部逗号
+仅当`]`，`)`或者`}`和最后元素不在同一行时，推荐使用序列元素尾部逗号。尾后逗号的存在也被用作Python代码自动格式化工具[yapf](https://github.com/google/yapf/)的提示，在`,`最后元素出现之后来自动调整容器每行一个元素。
+
+**Yes:**
+```Python
+golomb3 = [0, 1, 3]
+golomb4 = [
+    0,
+    1,
+    4,
+    6,
+]
+```
+
+**No:**
+```Python
+golomb4 = [
+    0,
+    1,
+    4,
+    6
+]
+```
+
+### 3.5 空行
+在顶级定义（函数或类）之间要间隔两行。在方法定义之间以及`class`所在行与第一个方法之间要空一行，`def`行后无空行，在函数或方法内你认为合适地方可以使用单空行。
+
+### 3.6 空格
+按照标准的排版规范来使用标点两边的空格。
+
+括号`()`，`[]`，`{}`内部不要多余的空格。
+
+**Yes:**
+```Python
+spam(ham[1], {eggs: 2}, [])
+```
+
+**No:**
+```Python
+spam( ham[ 1 ], { eggs: 2 }, [ ] )
+```
+
+逗号、分号、冒号之前不要空格，但应该在它们后面加（除了在行尾不该加）。
+
+**Yes:**
+```Python
+if x == 4:
+    print(x, y)
+x, y = y, x
+```
+
+**No:**
+```Python
+if x == 4 :
+    print(x , y)
+x , y = y , x
+```
+
+参数列表，索引或切片的左括号之前不应加空格。
+
+**Yes:**
+```Python
+spam(1)
+```
+
+**No:**
+```Python
+spam (1)
+```
+
+**Yes:**
+```Python
+dict['key'] = list[index]
+```
+
+**No:**
+```Python
+dict ['key'] = list [index]
+```
+
+行尾不要加空格。
+
+在赋值(`=`)，比较（`==`，`<`，`>`，`!=`，`<>`，`<=`，`>=`，`in`，`not in`，`is`，`is not`），布尔符号（`and`，`or`，`not`）前后都加空格。视情况在算术运算符（`+`，`-`，`*`，`/`，`//`，`%`，`**`，`@`）前后加空格。
+
+**Yes:**
+```Python
+x == 1
+```
+
+**No:**
+```Python
+x<1
+```
+
+当给关键字传值的时候或者是定义默认参数值的时候，不能在`=`前后加空格。只有一个情况例外：[当类型注释存在时](https://google.github.io/styleguide/pyguide.html#typing-default-values)，*一定要*在定义默认参数值时`=`前后加空格。
+
+**Yes:**
+```Python
+def complex(real, imag=0.0): return Magic(r=real, i=imag)
+def complex(real, imag: float = 0.0): return Magic(r=real, i=imag)
+```
+
+**No:**
+```Python
+def complex(real, imag = 0.0): return Magic(r = real, i = imag)
+def complex(real, imag: float=0.0): return Magic(r = real, i = imag)
+```
+
+不要用空格来垂直对齐多行间的标记，因为这会成为维护的负担（适用于`:`，`#`，`=`等）：
+
+**Yes:**
+```Python
+foo = 1000  # comment
+long_name = 2  # comment that should not be aligned
+dictionary = {
+    'foo': 1,
+    'long_name': 2,
+}
+```
+
+**No:**
+```Python
+foo       = 1000  # comment
+long_name = 2     # comment that should not be aligned
+
+dictionary = {
+    'foo'      : 1,
+    'long_name': 2,
+}
+```
+

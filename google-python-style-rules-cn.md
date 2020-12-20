@@ -763,3 +763,68 @@ Python文件拓展名必须为`.py`，不可以包含`-`（中划线）。这保
 | 函数/方法参数 | `lower_with_under` |  |
 | 局部变量 | `lower_with_under` |  |
 
+### 3.17 Main
+在Python当中，`pydoc`与单元测试都要求模块（Module）是可导入的（importable）。如果一个文件注定被当做可执行文件来运行，那么他的主函数应该在`main()`函数内，并且你的代码在执行之前，应该总是检查`if __name__ == "__main__"`，这样你的代码就不会在被导入的时候运行。
+
+若使用[absl](https://github.com/abseil/abseil-py)，请使用`app.run`：
+
+```Python
+from absl import app
+...
+
+def main(argv):
+    # process non-flag arguments
+    ...
+
+if __name__ == '__main__':
+    app.run(main)
+```
+否则使用：
+```Python
+def main():
+    ...
+
+if __name__ == '__main__':
+    main()
+```
+
+所有顶级代码在模块被导入的时候，都会被执行。应当注意当使用`pydoc`形成文档的时候，不要去调用函数、创建对象或者执行那些不应该被执行的操作。
+
+### 3.18 函数长度
+优先写小而专一的函数。
+
+长函数有时候是合适的，故而函数长度没有硬性的限制。但是如果一个函数超过40行的时候，就要考虑是否要在不影响程序结构的前提下分解函数。保持函数的简短与简洁，这样有利于其他人读懂和修改代码。
+
+在处理一些代码时，可能会发现有些函数很长而且复杂。不要畏惧调整现有代码，如果调整这样的函数非常困难，如难以对报错debug或者希望在几个不同的上下文中使用它的部分代码，那么请考虑将函数拆解成若干个更小更可控的片段。
+
+### 3.19 类型注释
+
+#### 3.19.1 基本规则
+* 请熟悉[PEP-484](https://www.python.org/dev/peps/pep-0484/)。
+* 在方法中，只在必要时给`self`或者`cls`增加合适的类型信息。例如`@classmethod def create(cls: Type[T]) -> T: return cls()`。
+* 如果其他变量或返回类型不定，使用`Any`。
+* 无需注释模块中的所有函数。
+    * 至少需要注明公共接口（public APIs）。
+    * 使用类型检查来在安全性和声明清晰性以及灵活性之间平衡。
+    * 标注容易因类型相关而抛出异常的代码（previous bugs or complexity，此处译者认为是与上一条一致，平衡安全性和复杂性）。
+    * 标注难理解的代码。
+    * 若代码中的类型已经稳定，可以进行注释。对于一份成熟的代码，多数情况下，即使注释了所有的函数，也不会丧失太多的灵活性。
+
+#### 3.19.2 换行
+尽量遵守既定的[缩进规则](https://google.github.io/styleguide/pyguide.html#indentation)。
+
+注释后，很多函数签名将会变成每行一个参数：
+```Python
+def my_method(self,
+              first_var: int,
+              second_var: Foo,
+              third_var: Optional[Bar]) -> int:
+  ...
+```
+
+优先在变量之间换行，而非其他地方如变量名和类型注释之间。如果都能放在一行内，就放在一行。
+```Python
+def my_method(self, first_var: int) -> int:
+  ...
+```
+

@@ -22,6 +22,6 @@ Google开源项目Python编码风格指南[1]中文翻译，翻译内容主要�
 
 [3] https://github.com/zh-google-styleguide/zh-google-styleguide
 
-[4] （编写可读代码的艺术）Duncan S P. The Art of Readable Code[J]. Software Quality Professional, 2012, 14(2): 47.
+[4] [编写可读代码的艺术](https://book.douban.com/subject/10797189/)：Duncan S P. The Art of Readable Code[J]. Software Quality Professional, 2012, 14(2): 47.
 
-[5] （代码整洁之道）Martin R C. Clean code: a handbook of agile software craftsmanship[M]. Pearson Education, 2009.
+[5] [代码整洁之道](https://book.douban.com/subject/4199741/)：Martin R C. Clean code: a handbook of agile software craftsmanship[M]. Pearson Education, 2009.

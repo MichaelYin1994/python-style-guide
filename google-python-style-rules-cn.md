@@ -292,3 +292,124 @@ dictionary = {
 }
 ```
 
+### 3.7 Shebang
+大部分`.py`文件不必以`#!`作为文件的开始。根据[PEP-394](https://www.google.com/url?sa=D&q=http://www.python.org/dev/peps/pep-0394/)，程序的main文件应该以`#!/usr/bin/python2`或`#!/usr/bin/python3`起始。
+
+（译者注：在计算机科学中，[Shebang](https://en.wikipedia.org/wiki/Shebang_(Unix))（也称为`Hashbang`）是一个由井号和叹号构成的字符串行（#!），其出现在文本文件的第一行的前两个字符。在文件中存在Shebang的情况下，类Unix操作系统的程序载入器会分析Shebang后的内容，将这些内容作为解释器指令，并调用该指令，并将载有Shebang的文件路径作为该解释器的参数。例如，以指令`#!/bin/sh`开头的文件在执行时会实际调用`/bin/sh`程序。）
+
+`#!/usr/bin/python3`类似的行参数用于帮助内核找到Python解释器，但是在导入模块时，将会被忽略。因此只有被直接执行的文件中才有必要加入`#!`。
+
+### 3.8 注释和文档字符串
+确保对模块，函数，方法的文档字符串和行内注释使用正确的风格。
+
+#### 3.8.1 文档字符串
+Python使用*文档字符串（docstrings）*来为代码生成文档。文档字符串是包，模块，类或函数里的第一个语句。这些字符串可以通过对象的`__doc__`成员被自动提取，并且被`pydoc`所用（尝试在你的模块上运行`pydoc`来看看效果）。我们对文档字符串的惯例是使用三重双引号`"""`（根据[PEP-257](https://www.google.com/url?sa=D&q=http://www.python.org/dev/peps/pep-0257/)）。 一个文档字符串应该这样组织：一行概述，该行以句号，问号或者感叹号作为结尾（单行不能超过80个字符）；接着是一行空行，随后是剩下的文档字符，这些剩下的文档字符串应当与第一行的第一个引号对齐。下面有更多文档字符串的格式化规范。
+
+#### 3.8.2 模块
+每个文件都应包含开源许可模板。选择用于项目的合适的开源许可模板（例如
+Apache 2.0，BSD，LGPL，GPL）
+
+文档应该以文档字符串开头，并描述模块的内容和使用方法。
+```Python
+"""A one line summary of the module or program, terminated by a period.
+
+Leave one blank line.  The rest of this docstring should contain an
+overall description of the module or program.  Optionally, it may also
+contain a brief description of exported classes and functions and/or usage
+examples.
+
+  Typical usage example:
+
+  foo = ClassFoo()
+  bar = foo.FunctionBar()
+"""
+```
+
+#### 3.8.3 函数和方法
+在本节，"函数"所指包括方法，函数或者生成器。
+
+函数必须具有文档字符串（docstring），除非有以下情况的出现：
+* 外部不可见
+* 非常短小
+* 简单明了
+
+文档字符串应该给出足够的信息，在不需要阅读函数代码的情况下说清如何调用该函数。文档字符串应该是叙事体（`"""Fetches rows from a Bigtable."""`）的而非命令式的（`"""Fetch rows from a Bigtable."""`），除非是`@property`（应与[attribute](https://google.github.io/styleguide/pyguide.html#384-classes)使用同样的风格）。文档字符串应描述函数的调用语法和其意义，而非实现。对于比较有技巧性的代码，代码旁边加注释比文档字符串的方法要更合适。
+
+覆盖基类的子类方法应有一个类似于`See base class`的简单注释来指引读者到基类方法的文档注释。这是因为子类方法没有必要在很多地方重复已经存在的基类的文档。但是，如果子类覆写的方法的行为与基类方法的行为有很大不同，那么注释中应该说明这些细节（例如，文档中说明副作用），覆写方法的文档字符串至少应该包含这些细节信息。
+
+关于函数的几个特定的方面应该在特定的小节中进行描述记录，这几个方面如下所述：每节应该以一个标题行开始，标题行以冒号结尾，每一节除了首行外，都应该以2或4个空格缩进并在整个文件内保持一致（译者注：包括与代码的缩进保持一致）。如果函数名和签名足够给出足够信息并且能够刚好被一行文档字符串所描述，那么可以忽略这些节：
+
+[*Args:*](https://google.github.io/styleguide/pyguide.html#doc-function-args)
+
+列出每个参数的名字。对参数的描述应该紧随参数名，并且使用一个冒号跟着空格或者一个冒号随后另起一行来分隔参数名与描述。如果描述太长了不能满足单行80个字符的要求，那么分行并缩进2或4个空格的悬挂缩进（必须与整个文件一致）。描述应该包含参数所要求的类型，如果代码不包含类型注释的话。如果函数容许`*foo`（不定长度参数列表）或`**bar`（任意关键字参数），那么就应该在文档字符串中列举为`*foo`和`**bar`。
+
+[*Returns:(对于生成器是Yields:)*](https://google.github.io/styleguide/pyguide.html#doc-function-returns)
+
+描述返回值的类型和含义。如果函数只返回None，这一小节不需要。如果文档字符串以Returns或者Yields开头（例如`"""Returns row from Bigtable as a tuple of strings."""`）或首句足够描述返回值的情况下，这一节可忽略。
+
+[*Raises:*](https://google.github.io/styleguide/pyguide.html#doc-function-returns)
+
+列出所有和接口相关的异常。使用与*Args:*一节中相似的形式描述异常，如异常名字+冒号+空格或者悬挂缩进。对于违反API要求而抛出的异常不应列出（因为这会悖论地使得违反API要求的行为成为接口的一部分）。
+
+```Python
+def fetch_smalltable_rows(table_handle: smalltable.Table,
+                          keys: Sequence[Union[bytes, str]],
+                          require_all_keys: bool = False,
+    ) -> Mapping[bytes, Tuple[str]]:
+    """Fetches rows from a Smalltable.
+
+    Retrieves rows pertaining to the given keys from the Table instance
+    represented by table_handle.  String keys will be UTF-8 encoded.
+
+    Args:
+        table_handle: An open smalltable.Table instance.
+        keys: A sequence of strings representing the key of each table row to fetch.  String keys will be UTF-8 encoded.
+        require_all_keys: Optional; If require_all_keys is True only rows with values set for all keys will be returned.
+
+    Returns:
+        A dict mapping keys to the corresponding table row data fetched. Each row is represented as a tuple of strings. For example:
+
+        {b'Serak': ('Rigel VII', 'Preparer'),
+        b'Zim': ('Irk', 'Invader'),
+        b'Lrrr': ('Omicron Persei 8', 'Emperor')}
+
+        Returned keys are always bytes.  If a key from the keys argument is missing from the dictionary, then that row was not found in the table (and require_all_keys must have been False).
+
+    Raises:
+        IOError: An error occurred accessing the smalltable.
+    """
+```
+
+在`Args:`上进行换行也是可以的：
+
+```Python
+def fetch_smalltable_rows(table_handle: smalltable.Table,
+                          keys: Sequence[Union[bytes, str]],
+                          require_all_keys: bool = False,
+    ) -> Mapping[bytes, Tuple[str]]:
+    """Fetches rows from a Smalltable.
+
+    Retrieves rows pertaining to the given keys from the Table instance
+    represented by table_handle.  String keys will be UTF-8 encoded.
+
+    Args:
+        table_handle:
+            An open smalltable.Table instance.
+        keys:
+            A sequence of strings representing the key of each table row to fetch.  String keys will be UTF-8 encoded.
+        require_all_keys:
+            Optional; If require_all_keys is True only rows with values set for all keys will be returned.
+
+    Returns:
+        A dict mapping keys to the corresponding table row data fetched. Each row is represented as a tuple of strings. For example:
+
+        {b'Serak': ('Rigel VII', 'Preparer'),
+        b'Zim': ('Irk', 'Invader'),
+        b'Lrrr': ('Omicron Persei 8', 'Emperor')}
+
+        Returned keys are always bytes.  If a key from the keys argument is missing from the dictionary, then that row was not found in the table (and require_all_keys must have been False).
+
+    Raises:
+        IOError: An error occurred accessing the smalltable.
+    """
+```

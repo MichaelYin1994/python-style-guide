@@ -11,7 +11,7 @@
 * 长import表达式
 * 注释中的：URL，路径，flags等
 * 不包含空格并不方便分行的模块级别的长字符串常量
-  * pylint的diable注释使用(如`# pylint: disable=invalid-name`)
+  * pylint的disable注释使用(如`# pylint: disable=invalid-name`)
 
 不要使用反斜杠连接不同的行，除非对于需要三层或以上的上下文管理器`with`语句。
 
@@ -413,3 +413,353 @@ def fetch_smalltable_rows(table_handle: smalltable.Table,
         IOError: An error occurred accessing the smalltable.
     """
 ```
+
+#### 3.8.4 类
+类应该具有文档字符串，文档字符串应该位于类定义的下一行，用来描述该类。如果类具有公共属性（Attributes），那么文档字符串应当有`Attributes`这一小节描述，并且和[函数的`Args`](https://google.github.io/styleguide/pyguide.html#doc-function-args)一节风格统一。
+
+```Python
+class SampleClass(object):
+    """Summary of class here.
+
+    Longer class information....
+    Longer class information....
+
+    Attributes:
+        likes_spam: A boolean indicating if we like SPAM or not.
+        eggs: An integer count of the eggs we have laid.
+    """
+
+    def __init__(self, likes_spam=False):
+        """Inits SampleClass with blah."""
+        self.likes_spam = likes_spam
+        self.eggs = 0
+
+    def public_method(self):
+        """Performs operation blah."""
+```
+
+#### 3.8.5 块注释和行注释
+最后要在代码中注释的地方是代码有技巧性的部分。如果你将要在下次[code review](http://en.wikipedia.org/wiki/Code_review)解释这段代码，那么你应该现在就给它写注释。对于复杂的操作，应该在其操作开始前写上若干行注释。对于不是一目了然的代码，应在其行尾添加注释。
+
+```Python
+# We use a weighted dictionary search to find out where i is in
+# the array.  We extrapolate position based on the largest num
+# in the array and the array size and then do binary search to
+# get the exact number.
+
+if i & (i-1) == 0:  # True if i is 0 or a power of 2.
+```
+
+为了提升可读性，行注释应该至少在代码2个空格后，并以`#`后接至少1个空格开始注释部分。
+
+另外，绝对不要描述代码。假定阅读代码的人比你更精通Python（他只是不知道你试图做什么）。
+
+```Python
+# BAD COMMENT: Now go through the b array and make sure whenever i occurs
+# the next element is i+1
+```
+
+#### 3.8.6 标点,拼写和语法
+注意标点，拼写和语法，写得好的注释要比写得差的好读。
+
+注释应当是和叙事性文本一样可读，并具有合适的大小写和标点。在许多情况下，完整的句子要比破碎的句子更可读。更简短的注释如行尾的注释可以不用太正式，但是你应该全篇保持风格一致。
+
+尽管被代码审核人员指出在应该使用分号的地方使用了逗号是很令人沮丧的，将源代码维护在高度清楚可读的程度是很重要的。合适的标点，拼写和语法能够帮助达到这个目标。
+
+### 3.9 类
+类不需要显式的从`object`继承（除非为了与Python 2兼容）。
+
+**Modern:**
+```Python
+class SampleClass:
+    pass
+
+class OuterClass:
+
+    class InnerClass:
+        pass
+```
+
+**Ancient:**
+```Python
+class SampleClass(object):
+    pass
+
+class OuterClass(object):
+
+    class InnerClass(object):
+        pass
+```
+
+### 3.10 字符串
+使用`format`或`%`来格式化字符串，即使参数都是字符串对象。不过也不能一概而论, 你需要在`+`还是`%`（或是`format`）之间好好判定。
+
+**Yes:**
+```Python
+x = a + b
+x = '%s, %s!' % (imperative, expletive)
+x = '{}, {}'.format(first, second)
+x = 'name: %s; score: %d' % (name, n)
+x = 'name: {}; score: {}'.format(name, n)
+x = f'name: {name}; score: {n}'  # Python 3.6+
+```
+
+**No:**
+```Python
+x = '%s%s' % (a, b)  # use + in this case
+x = '{}{}'.format(a, b)  # use + in this case
+x = imperative + ', ' + expletive + '!'
+x = 'name: ' + name + '; score: ' + str(n)
+```
+
+避免使用`+`和`+=`操作符来在循环内累加字符串。由于字符串是不可变的，这样做会创建不必要的临时对象，并且导致二次方而不是线性的运行时间。作为替代方案，你可以将每个子串加入列表，然后在循环结束后用`.join`连接列表（也可以将每个子串写入一个`io.BytesIO`缓存中）。
+
+**Yes:**
+```Python
+items = ['<table>']
+for last_name, first_name in employee_list:
+    items.append('<tr><td>%s, %s</td></tr>' % (last_name, first_name))
+items.append('</table>')
+employee_table = ''.join(items)
+```
+
+**No:**
+```Python
+employee_table = '<table>'
+for last_name, first_name in employee_list:
+    employee_table += '<tr><td>%s, %s</td></tr>' % (last_name, first_name)
+employee_table += '</table>'
+```
+
+在同一个文件（file）中，保持使用字符串引号的一致性。选择`'`或者`"`然后一以贯之。在字符串内可以使用另外一种引号，以避免在字符串中使用`\`转义符。
+
+**Yes:**
+```Python
+Python('Why are you hiding your eyes?')
+Gollum("I'm scared of lint errors.")
+Narrator('"Good!" thought a happy Python reviewer.')
+```
+
+**No:**
+```Python
+Python("Why are you hiding your eyes?")
+Gollum('The lint. It burns. It burns us.')
+Gollum("Always the great lint. Watching. Watching.")
+```
+
+为多行字符串使用三重双引号`"""`而非三重单引号`'''`。当且仅当项目中使用单引号`'`来引用字符串时，才可能会使用三重`'''`为非文档字符串的多行字符串来标识引用。文档字符串必须使用三重双引号`"""`。
+
+多行字符串不应随着代码其他部分缩进的调整而发生位置移动。如果需要避免在字符串中插入额外的空格，要么使用单行字符串连接或者带有[`textwarp.dedent()`](https://docs.python.org/3/library/textwrap.html#textwrap.dedent)的多行字符串来移除每行的起始空格。
+
+**No:**
+```Python
+long_string = """This is pretty ugly.
+Don't do this.
+"""
+```
+
+**Yes:**
+```Python
+long_string = """This is fine if your use case can accept
+    extraneous leading spaces."""
+
+long_string = ("And this is fine if you can not accept\n" +
+               "extraneous leading spaces.")
+
+long_string = ("And this too is fine if you can not accept\n"
+               "extraneous leading spaces.")
+
+import textwrap
+
+long_string = textwrap.dedent("""\
+    This is also fine, because textwrap.dedent()
+    will collapse common leading spaces in each line.""")
+```
+
+### 3.11 文件对象和socket
+当使用结束后显式的关闭文件对象和socket。
+
+除文件对象外，sockets或其他类似文件的对象在没有必要的情况下打开，会有许多缺点。例如：
+* 他们可能会消耗有限的系统资源，例如文件描述符。如果在使用之后没有及时返还系统，处理很多这样对象的代码可能会将资源消耗殆尽。
+* 保持一个文件的打开状态可能会阻止其他操作，诸如移动、删除之类的操作。
+* 仅仅是从逻辑上关闭文件对象和sockets，那么它们仍然可能会被其共享的程序在无意中进行读或者写操作。只有当它们真正被关闭后，对于它们尝试进行读或者写操作将会抛出异常，并使得问题快速显现出来。
+
+此外，尽管文件或socket在文件对象被销毁的同时被自动关闭，但是将文件对象的生命周期与文件状态进行绑定是糟糕的实践：
+
+* 不能保证何时会真正将文件对象销毁。不同的Python解释器使用的内存管理技术不同，例如延时垃圾处理，可能会让对象的生命周期被无限期延长。
+* 可能导致意料之外地对文件对象的引用，例如在全局变量或者异常回溯中，可能会让文件对象比预计的生命周期更长。
+
+推荐使用[with语句](http://docs.python.org/reference/compound_stmts.html#the-with-statement)管理文件：
+```Python
+with open("hello.txt") as hello_file:
+    for line in hello_file:
+        print(line)
+```
+
+对于类似文件的对象，如果不支持with语句的可以使用`contextlib.closing()`：
+
+```Python
+import contextlib
+
+with contextlib.closing(urllib.urlopen("http://www.python.org/")) as front_page:
+    for line in front_page:
+        print(line)
+```
+
+### 3.12  TODO注释
+对于下述情况使用`TODO`注释：临时的，短期的解决方案或者足够好但是不完美的解决方案。
+
+`TODO`注释以全部大写的字符串`TODO`开头，并带有写入括号内的姓名、e-mail地址或其他可以标识负责人或者包含关于问题最佳描述的issue。随后是这里未来应该做什么的说明。
+
+有统一风格的`TODO`的目的是为了方便搜索并了解如何获取更多相关细节。写了`TODO`注释并不保证写的人会亲自解决问题。当你写了一个`TODO`，请注上你的名字。
+
+```Python
+# TODO(kl@gmail.com): Use a "*" here for string repetition.
+# TODO(Zeke) Change this to use relations.
+```
+
+如果`TODO`注释形式为"未来某个时间点会做什么事"的格式，确保要么给出一个非常具体的时间点（例如"将于2009年11月前修复"）或者给出一个非常具体的事件（例如"当所有客户端都能够处理XML响应时就移除此代码"）。
+
+### 3.13 import格式
+imports应该在不同行，除了对于`typing`类的导入。例如：
+
+**Yes:**
+```Python
+import os
+import sys
+from typing import Mapping, Sequence 
+```
+
+**No:**
+```Python
+import os, sys
+```
+
+import应集中放在文件顶部，在模块注释和文档字符串（docstrings）后面，模块globals和常量前面。应按照从最通用到最不通用的顺序排列分组：
+
+1. Python未来版本import语句，例如：    
+>   ```Python
+>    from __future__ import absolute_import
+>    from __future__ import division
+>    from __future__ import print_function
+>    ```
+
+>    更多信息参看[上文](https://google.github.io/styleguide/pyguide.html#from-future-imports)
+
+2. Python标准基础库import，例如：
+>    ```Python
+>    import sys
+>    ```
+
+3. 第三方库或包的import，例如：
+>    ```Python
+>    import tensorflow as tf
+>    ```
+
+4. 代码库内子包import，例如：
+>    ```Python
+>    from otherproject.ai import mind
+>    ```
+    
+5. **此条已弃用**：和当前文件是同一顶级子包专用的import，例如：
+>    ```Python
+>    from myproject.backend.hgwells import time_machine
+>    ```
+>    在旧版本的谷歌Python代码风格指南中实际上是这样做的。但是现在不再需要了。**新的代码风格不再受此困扰**。简单的将专用的子包import和其他子包import同一对待即可。
+
+在每个组内按照每个模块的完整包路径的字典序忽略大小写排序（即`from path import ...`当中的`path`）（译者注：即按照字母表排序）。可以根据情况在每个节之间增加空行。
+```Python
+import collections
+import queue
+import sys
+
+from absl import app
+from absl import flags
+import bs4
+import cryptography
+import tensorflow as tf
+
+from book.genres import scifi
+from myproject.backend import huxley
+from myproject.backend.hgwells import time_machine
+from myproject.backend.state_machine import main_loop
+from otherproject.ai import body
+from otherproject.ai import mind
+from otherproject.ai import soul
+
+# Older style code may have these imports down here instead:
+#from myproject.backend.hgwells import time_machine
+#from myproject.backend.state_machine import main_loop 
+```
+
+### 3.14 语句（Statements）
+一般来说，每行只有一条语句（statement）。
+
+但是，如果测试结果与测试语句在一行放得下，你也可以将它们放在同一行。这种情况只有是`if`语句没有`else`时才能这样做，绝对不要对`try / except`这么做，因为`try`和`except`不能放在同一行。
+
+**Yes:**
+```Python
+if foo: bar(foo)
+```
+
+**No:**
+```Python
+if foo: bar(foo)
+else:   baz(foo)
+
+try:               bar(foo)
+except ValueError: baz(foo)
+
+try:
+    bar(foo)
+except ValueError: baz(foo)
+```
+
+### 3.15 访问控制
+在Python中，对于琐碎又不太重要的访问函数，你应该直接使用公有变量来取代它们，这样可以避免额外的函数调用开销。当添加更多功能时，你可以用`属性（property）`来保持语法的一致性. 
+
+（译者注：重视封装的面向对象程序员看到这个可能会很反感，因为他们一直被教育：所有成员变量都必须是私有的！其实，那真的是有点麻烦啊。试着去接受Pythonic哲学吧！）
+
+另一方面，如果访问更复杂，对于变量的访问开销显著，你应该使用像`get_foo()`和`set_foo()`这样的函数调用（参考[命名](https://google.github.io/styleguide/pyguide.html#s3.16-naming)指南）。如果过去的访问方式是通过属性（property），那么新访问函数不要绑定到property上。这样，任何试图通过老方法访问变量的代码就没法运行，使用者也就会意识到复杂性发生了变化。
+
+### 3.16 命名
+模块名命名范式：`module_name`，包名命名范式：`package_name`，类名命名范式：`ClassName`，方法名命名范式：`method_name`，异常名命名范式：`ExceptionName`，函数名命名范式：`function_name`，全局常量命名范式：`GLOBAL_CONSTANT_NAME`，全局变量命名范式：`global_var_name`，实例命名范式：`instance_var_name`，函数命名范式：`function_parameter_name`，局部变量命名范式`local_var_name`。
+
+函数名、变量名、文件名应该是描述性的，避免缩写，尤其避免模糊或对读者不熟悉的缩写。并且不要通过删减单词内的字母来缩写。
+
+#### 3.16.1 要避免的名字：
+* 单字符名字，除非是以下特殊案例：
+  * 计数器或者迭代器（例如`i, j, k, v`等等）。
+  * 作为`try/except`中异常声明的`e`。
+  * 作为`with`语句中文件对象的`f`。
+
+    请注意不要滥用单字符命名。一般来说，变量名的描述程度应当与命名空间的范围成比例。例如对于变量`i`应该在5行代码块以内有效，如果对于多段嵌套代码含义则显得过于模糊。
+* `-` 横线，不应出现在任何包名或模块名内。
+* `__double_leading_and_trailing_underscore__` 首尾都双下划线的名字，这种名字是Python的内置保留名字。
+* 有冒犯性质的名字（译者注：例如不文明词汇，侮辱性词汇）。
+
+#### 3.16.2 命名约定
+*  internal表示仅模块内可用、或者类内保护的或者私有的。
+*  单下划线（`_`）开头表示该模块变量与方法是被保护的（linters会标记“被保护的成员变量”）（译者注：`from module import *`不会import）。双下划线（`__`也就是"dunder"）开头的实例变量或者方法表示类内私有（使用命名修饰）。我们不鼓励使用，因为这会对可读性和可测试性有影响，并且不会使得变量`真正`的私有。
+*  将相关的类和顶级函数放在同一个模块里。不像Java，没必要限制一个类一个模块。
+*  对类名使用大写字母开头的单词（如CapWords, 即Pascal风格），但是模块名应该用小写加下划线的方式（如lower_with_under.py）。尽管已经有很多现存的模块使用类似于CapWords.py这样的命名，但现在已经不鼓励这样做，因为如果模块名碰巧和类名一致，这会让人困扰（例如：我刚刚写的是`import StringIO`还是`from StringIO import StringIO`？）。
+*  在*unittest*方法中可能是`test`开头来分割名字的组成部分，即使这些组成部分是使用大写字母驼峰式的。典型的可能模式像：`test<MethodUnderTest>_<state>`，例如`testPop_EmptyStack`是可以的。对于测试方法的命名没有明确的正确方法。
+
+#### 3.16.3 文件（File）命名
+Python文件拓展名必须为`.py`，不可以包含`-`（中划线）。这保证了能够被正常import和单元测试。如果希望一个可执行文件不需要拓展名就可以被调用，那么建立一个软连接或者一个简单的bash打包脚本包括`exec "$0.py" "$@"`。
+
+#### 3.16.4 Guido的指导建议
+| **类型** | **公共** | **内部** |
+| --- | --- | --- |
+| 包 | `lower_with_under` |  |
+| 模块 | `lower_with_under` | `_lower_with_under` |
+| 类 | `CapWords` | `_CapWords` |
+| 异常 | `CapWords` |  |
+| 函数 | `lower_with_under()` | `_lower_with_under()` |
+| 全局/类常量 | `CAPS_WITH_UNDER` | `_CAPS_WITH_UNDER` |
+| 全局/类变量 | `lower_with_under` | `_lower_with_under` |
+| 实例变量 | `lower_with_under` | `_lower_with_under`(受保护) |
+| 方法名 | `lower_with_under()` | `_lower_with_under()`(受保护) |
+| 函数/方法参数 | `lower_with_under` |  |
+| 局部变量 | `lower_with_under` |  |
+

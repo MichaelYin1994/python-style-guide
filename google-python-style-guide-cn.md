@@ -390,7 +390,7 @@ portion_too_long = ('yes'
 你可以在函数参数列表的最后指定变量的值，例如，`def foo(a, b = 0):`。如果调用`foo`时只带一个参数，则b被设为0。如果带两个参数，则b的值等于第二个参数。
 
 #### 2.12.2 优点：
- 经常有一些函数使用了大量的默认参数，但很少你会有修改这些默认值的情况。默认参数值提供了一种简单的方法来完成这件事，你不需要为这些罕见的例外定义大量函数。同时, Python也不支持重载方法和函数。默认参数是一种“仿造”重载行为的简单方式。
+经常有一些函数使用了大量的默认参数，但很少你会有修改这些默认值的情况。默认参数值提供了一种简单的方法来完成这件事，你不需要为这些罕见的例外定义大量函数。同时, Python也不支持重载方法和函数。默认参数是一种“仿造”重载行为的简单方式。
 
 #### 2.12.3 缺点：
 默认参数只在模块加载时进行一次求值。如果参数是列表或字典之类的可变类型，这就会出现问题，如果函数修改了默认参数的对象（例如向列表执行`append`操作）, 默认值就被修改了。
@@ -716,7 +716,7 @@ a: SomeType = some_func()
 ```
 在必须支持老版本Python运行的代码中则可以这样注释：
 ```Python
-a = some_func()  #type: SomeType
+a = some_func()  # type: SomeType
 ```
 
 #### 2.21.2 优点：
@@ -808,7 +808,7 @@ with VeryLongFirstExpressionFunction() as spam, \
 ### 3.3 括号
 合理的使用括号。
 
-尽管不必要，但是可以在元组外加括号。再返回语句或者条件语句中不要使用括号，除非是用于隐式的连接行或者指示元组。
+尽管不必要，但是可以在元组外加括号。在返回语句或者条件语句中不要使用括号，除非是用于隐式的连接行或者指示元组。
 
 **Yes:**
 ```Python
@@ -1156,7 +1156,7 @@ def fetch_smalltable_rows(table_handle: smalltable.Table,
 类应该具有文档字符串，文档字符串应该位于类定义的下一行，用来描述该类。如果类具有公共属性（Attributes），那么文档字符串应当有`Attributes`这一小节描述，并且和[函数的`Args`](https://google.github.io/styleguide/pyguide.html#doc-function-args)一节风格统一。
 
 ```Python
-class SampleClass(object):
+class SampleClass:
     """Summary of class here.
 
     Longer class information....

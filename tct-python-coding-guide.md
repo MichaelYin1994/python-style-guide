@@ -5,22 +5,26 @@
 
 @参考文献：
 - [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)
+- [python-web-guide](https://python-web-guide.readthedocs.io/zh/latest/codingstyle/codingstyle.html)
 - [编写可读代码的艺术](https://book.douban.com/subject/10797189/)：Duncan S P. The Art of Readable Code[J]. Software Quality Professional, 2012, 14(2): 47.
 - [代码整洁之道](https://book.douban.com/subject/4199741/)：Martin R C. Clean code: a handbook of agile software craftsmanship[M]. Pearson Education, 2009.
 
-@致谢：
+@致谢 & 参考：
 - [谷歌Python代码风格指南-中文翻译](https://github.com/shendeguize/GooglePythonStyleGuideCN)
 - [Google 开源项目风格指南 (中文版)](https://github.com/zh-google-styleguide/zh-google-styleguide)
 
 Python是目前主流的脚本语言，被用于Web开发、网络爬虫、数据分析等方方面面。这本指南主要包含的是针对**Python 3.x**的编程准则，用于规范团队的风格，便于新的编码人员快速融入团队，也为Python的代码审查提供一个基础的标准。后续如无特殊说明，**Python**均指**Python 3.x**。
 
-本指南总共包含4个章节：
+本指南总共包含5个章节：
 - **代码检视工具**：阐明了如何利用常见的IDE（例如Visual Studio Code，或者Pycharm）对代码进行检查。
 - **基本命名规则**：规定了针对Python编码过程中，包（Packages）、模块（Modules）、类（class）等的命名规范与风格，并包含了一系列的具体建议。
-- **Python编码风格与规范**：规定了Python编码过程中的风格与规范。
-- **单元测试**：规定了针对各个级别的单元测试文件的撰写。
+- **Python编码风格规范**：规定了形成Python风格的代码的规范。
+- **Python编码语言规范**：规定了利用Python语言编码过程中的注意事项。
+- **单元测试规范**：待完善。
 
-本指南的撰写，主要参考了前述的参考文献。其中主要脱胎于Google的[Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)与[编写可读代码的艺术](https://book.douban.com/subject/10797189/)。但是为了团队实施的便捷性，删去了一些章节的内容，例如针对Python 2.x的后向兼容措施、针对Python 3.x的类型注释措施等，仅保留了一些笔者认为至关重要的部分，因此请读者在阅读时多多留心。
+在本指南中，后缀有**强制**字样的章节，建议团队严格统一按照此条执行；后缀有**建议**字样的章节，建议团队尽量执行，但不做强制要求。
+
+本指南的撰写，参考了前述的参考文献。其中主要脱胎于Google的[Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)与[编写可读代码的艺术](https://book.douban.com/subject/10797189/)。但是为了团队实施的便捷性，删去了一些章节的内容，例如针对Python 2.x的后向兼容措施、针对Python 3.x的类型注释措施等，仅保留了一些笔者认为至关重要的部分，因此请读者在阅读时多多留心。
 
 基于本指南，我们开源了一个自然语言处理的[小型项目](https://github.com/MichaelYin1994/textrank)作为该指南的模板项目，基于本指南的一切命名、注释、单元测试等规范可参考该项目的编码实现。
 
@@ -31,7 +35,7 @@ Python是目前主流的脚本语言，被用于Web开发、网络爬虫、数�
 ## 1 代码检视工具
 ================================
 
-### 1.1 Lint
+### 1.1 Lint（强制）
 请使用该[pylintrc](https://github.com/MichaelYin1994/textrank/blob/master/pylintrc)对你的代码运行`pylint`。
 
 `pylint`是一个在Python源代码中查找bug的工具。对于C和C++这样的不那么动态的（强制类型）语言，这些bug通常由编译器来捕获。由于Python的动态特性，`pylint`生成的有些警告可能不对，不过伪告警应该相对较少。
@@ -52,13 +56,15 @@ def viking_cafe_order(spam, beans, eggs=None):
 ```
 其他消除这个告警的方法还有使用`_`标识未使用参数，或者给这些参数名加上前缀 `unused_`，或者直接把它们赋值给`_`。这些方法都是允许的，但是已经不再被鼓励使用。前两种方式会影响到通过参数名传参的调用方式，而最后一种并不能保证参数确实未被使用。
 
+--------------------
 ### 1.2 pylint在Visual Studio Code中的配置方法
 pylint在Visual Studio Code中的配置
 
+--------------------
 ### 1.3 pylint在Pycharm中的配置方法
 pylint在Pycharm中的配置
 
----
+--------------------
 
 ## 2 基本命名规则
 ================================
@@ -89,6 +95,7 @@ Python之父Guido的命名指导建议：
 * 在*unittest*方法中可能是`test`开头来分割名字的组成部分，即使这些组成部分是使用大写字母驼峰式的。典型的可能模式像：`test<MethodUnderTest>_<state>`，例如`testPop_EmptyStack`是可以的。对于测试方法的命名没有明确的正确方法。
 * Python文件拓展名必须为`.py`，不可以包含`-`（中划线），这保证了能够被正常import和单元测试。
 
+--------------------
 ### 2.2 命名过程中应当避免的情况（强制）
 命名过程中应当避免以下的一系列情况：
 * 单字符名字，除非是以下特殊案例：
@@ -102,6 +109,7 @@ Python之父Guido的命名指导建议：
 * 有冒犯性质的名字，例如不文明词汇，侮辱性词汇。
 * 空泛的名字。好的名字应当描述变量的目的或者它承载的值。例如某个函数的返回值为输入数组`x`的算平方和，那么`sum_squares`比`retval`这样的名字要好。因此需要尽量避免使用`tmp`、`retval`、`foo`这样的词。
 
+--------------------
 ### 2.3 命名过程中的应当尽量遵守的准则（建议）
 在命名过程中，应当尽量遵守以下的一系列准则：
 * 名字不让人产生误解。阅读你代码的人应该理解你的本意，并且不会产生歧义。使用某一个名字之前，要吹毛求疵一点，可以想象一下你的名字会被误解成什么。最好的名字是不会存在误解。例如在写一段数据库操作的代码的时候，采用如下的代码
@@ -120,7 +128,7 @@ Python之父Guido的命名指导建议：
     | make  | create、set up、build、generate、compose、add、new |
 * 命名过程中，尽量为变量名附加更多的信息。一个变量就像是一个小小的注释，因此如果关于某个变量如果有什么重要信息，那么值得将额外的“词”添加进名字里。例如如果一个`id`字符串是十六进制的，可以命名为`hex_id`。
 
----
+--------------------
 
 ## 3 Python注释和文档字符串
 ================================
@@ -342,14 +350,14 @@ a = some_func()  # type: SomeType
 
 ---
 
-## 4 Python编码语言与风格规范（强制）
+## 4 Python编码风格规范
 ================================
 
-### 4.1 分号
+### 4.1 分号（强制）
 不要在行尾加分号，也不要用分号把两行语句合并到一行。
 
 --------------------
-### 4.2 行长度
+### 4.2 行长度（强制）
 最大行长度是*80个字符*。
 
 行长度超出80字符的例外：
@@ -415,7 +423,7 @@ with VeryLongFirstExpressionFunction() as spam, \
 ```
 
 --------------------
-### 4.3 括号
+### 4.3 括号（强制）
 应当合理的使用括号。
 
 尽管不必要，但是可以在元组外加括号。在返回语句或者条件语句中不要使用括号，除非是用于隐式的连接行或者指示元组。
@@ -448,7 +456,7 @@ return (foo)
 ```
 
 --------------------
-### 4.4 缩进
+### 4.4 缩进（强制）
 缩进用4个空格。
 
 缩进代码段不要使用制表符，或者混用制表符和空格。如果连接多行，多行应垂直对齐，或者再次4空格缩进，这个情况下首行括号后应该不包含代码。
@@ -529,11 +537,11 @@ golomb4 = [
 ```
 
 --------------------
-### 4.5 空行
+### 4.5 空行（强制）
 在顶级定义（函数或类）之间要间隔两行。在方法定义之间以及`class`所在行与第一个方法之间要空一行，`def`行后无空行，在函数或方法内你认为合适地方可以使用单空行。
 
 --------------------
-### 4.6 空格
+### 4.6 空格（强制）
 按照标准的排版规范来使用标点两边的空格。
 
 括号`()`，`[]`，`{}`内部不要多余的空格。
@@ -638,13 +646,13 @@ dictionary = {
 ```
 
 --------------------
-### 4.7 Shebang
+### 4.7 Shebang（强制）
 大部分`.py`文件不必以`#!`作为文件的开始。根据[PEP-394](https://www.google.com/url?sa=D&q=http://www.python.org/dev/peps/pep-0394/)，程序的main文件应该以`#!/usr/bin/python2`或`#!/usr/bin/python3`起始。（在计算机科学中，[Shebang](https://en.wikipedia.org/wiki/Shebang_(Unix))（也称为`Hashbang`）是一个由井号和叹号构成的字符串行（#!），其出现在文本文件的第一行的前两个字符。在文件中存在Shebang的情况下，类Unix操作系统的程序载入器会分析Shebang后的内容，将这些内容作为解释器指令，并调用该指令，并将载有Shebang的文件路径作为该解释器的参数。例如，以指令`#!/bin/sh`开头的文件在执行时会实际调用`/bin/sh`程序。）
 
 `#!/usr/bin/python3`类似的行参数用于帮助内核找到Python解释器，但是在导入模块时，将会被忽略。因此只有被直接执行的文件中才有必要加入`#!`。
 
 --------------------
-### 4.8 类
+### 4.8 类（强制）
 Python 3中，类不需要显式的从`object`继承（除非为了与Python 2兼容）。
 
 **Modern:**
@@ -670,7 +678,7 @@ class OuterClass(object):
 ```
 
 --------------------
-### 4.9 字符串
+### 4.9 字符串（强制）
 使用`format`或`%`来格式化字符串，即使参数都是字符串对象。不过也不能一概而论, 你需要在`+`还是`%`（或是`format`）之间好好判定。
 
 **Yes:**
@@ -749,7 +757,7 @@ long_string = ("And this too is fine if you can not accept\n"
 ```
 
 --------------------
-### 4.10 文件对象和socket
+### 4.10 文件对象和socket（强制）
 当使用结束后显式的关闭文件对象和socket。推荐使用[with语句](http://docs.python.org/reference/compound_stmts.html#the-with-statement)管理文件：
 ```Python
 with open("hello.txt") as hello_file:
@@ -768,7 +776,7 @@ with contextlib.closing(urllib.urlopen("http://www.python.org/")) as front_page:
 ```
 
 --------------------
-### 4.11 import格式
+### 4.11 import格式（强制）
 imports应该在不同行，除了对于`typing`类的导入。例如：
 
 **Yes:**
@@ -809,6 +817,8 @@ import应集中放在文件顶部，在模块注释和文档字符串（docstrin
 >    from otherproject.ai import mind
 >    ```
 
+5. 严禁使用`from tensorflow import *`这样的语句导入所有模块。
+
 在每个组内按照每个模块的完整包路径的字典序忽略大小写排序（即`from path import ...`当中的`path`）（即按照字母表排序）。可以根据情况在每个节之间增加空行。
 ```Python
 import collections
@@ -831,7 +841,7 @@ from otherproject.ai import soul
 ```
 
 --------------------
-### 4.12 语句（Statements）
+### 4.12 语句（Statements）（强制）
 一般来说，每行只有一条语句（statement）。
 
 但是，如果测试结果与测试语句在一行放得下，你也可以将它们放在同一行。这种情况只有是`if`语句没有`else`时才能这样做，绝对不要对`try / except`这么做，因为`try`和`except`不能放在同一行。
@@ -855,7 +865,7 @@ except ValueError: baz(foo)
 ```
 
 --------------------
-### 4.13 Main
+### 4.13 Main（强制）
 在Python当中，`pydoc`与单元测试都要求模块（Module）是可导入的（importable）。如果一个文件注定被当做可执行文件来运行，那么他的主函数应该在`main()`函数内，并且你的代码在执行之前，应该总是检查`if __name__ == "__main__"`，这样你的代码就不会在被导入的时候运行。
 
 若使用[absl](https://github.com/abseil/abseil-py)，请使用`app.run`：
@@ -883,7 +893,7 @@ if __name__ == '__main__':
 所有顶级代码在模块被导入的时候，都会被执行。应当注意当使用`pydoc`形成文档的时候，不要去调用函数、创建对象或者执行那些不应该被执行的操作。
 
 --------------------
-### 4.14 函数长度
+### 4.14 函数长度（强制）
 优先写小而专一的函数。
 
 长函数有时候是合适的，故而函数长度没有硬性的限制。但是如果一个函数超过40行的时候，就要考虑是否要在不影响程序结构的前提下分解函数。保持函数的简短与简洁，这样有利于其他人读懂和修改代码。
@@ -1180,5 +1190,12 @@ class C(object):
 
 如果好处很明显，就明智而谨慎的使用装饰器。装饰器应该遵守和函数一样的导入和命名规则。装饰器的python文档应该清晰的说明该函数是一个装饰器。请为装饰器编写单元测试。 
 
-## 4 单元测试
+--------------------
+## 6 最后的话
 ================================
+
+***请务必保持代码的一致性（BE CONSISTENT）***
+
+如果你正在编辑代码，花几分钟看一下周边代码，然后决定风格。如果它们在所有的算术操作符两边都使用空格，那么你也应该这样做。如果它们的注释都用标记包围起来，那么你的注释也要这样。
+
+制定风格指南的目的在于让代码有规可循，这样人们就可以专注于“你在说什么”，而不是“你在怎么说”。我们在这里给出的是全局的规范，但是本地的规范同样重要。如果你加到一个文件里的代码和原有代码大相径庭，它会让读者不知所措。请避免这种情况。

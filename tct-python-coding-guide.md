@@ -65,9 +65,11 @@ pylint在Windows下的Visual Studio Code中的配置方法如下所示：
 * 保存`.py`文件时，会自动运行linting并输出检测结果。
 
 其中，settings.json文件如下图：
+
 ![wx_20210104170958](pics/wx_20210104170958.png)
 
 pylint运行后的提示结果如下图：
+
 ![wx_20210104171015](pics/wx_20210104171015.png)
 
 --------------------
@@ -86,9 +88,11 @@ pylint在Windows下的Pycharm中的配置方法如下所示：
 * 使用时右键点击项目或文件，在`External Tools`项中选择上面创建的`pylint`
 
 Create Tool如下图：
-![wx_20210104170819](pics/wx_20210104170819.png)
+
+ <img src="./pics/wx_20210104170819.png" height="400" alt="Create Tool" align=center/>
 
 pylint运行结果如下图：
+
 ![wx_20210104170922](pics/wx_20210104170922.png)
 
 更详细的相关资料，包括linux下的pylintrc环境配置，可参见[如何使用PyCharm运行Pylint](https://www.itranslater.com/qa/details/2582431254444508160)。

@@ -850,7 +850,7 @@ import应集中放在文件顶部，在模块注释和文档字符串（docstrin
 >    from otherproject.ai import mind
 >    ```
 
-5. 严禁使用`from tensorflow import *`这样的语句导入所有模块。
+5. 严禁使用`from tensorflow import *`这样的语句一次性导入包的所有模块。
 
 在每个组内按照每个模块的完整包路径的字典序忽略大小写排序（即`from path import ...`当中的`path`）（即按照字母表排序）。可以根据情况在每个节之间增加空行。
 ```Python

@@ -1,0 +1,6 @@
+*.csv
+*.pkl
+*.zip
+*.npz
+*.pyc
+*.hdf

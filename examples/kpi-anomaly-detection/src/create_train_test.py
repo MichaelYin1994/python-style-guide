@@ -67,6 +67,7 @@ if __name__ == '__main__':
     # ----------------
     NROWS = None
     IS_PLOT_KPI = False
+    TEST_RATIO = 0.3
     TRAIN_PATH = '../data/kpi competition/'
 
     # 数据预处理：
@@ -106,11 +107,48 @@ if __name__ == '__main__':
         )
 
     # TODO(zhuoyin94@163.com): 拆分测试数据，进行流测试
-    # 拆分测试数据，构建流测试输入
+    # 拆分测试数据，做两类拆分：
+    # 1. 按时间戳范围与预设比例，拆分testing数据
+    # 2. 整体测试数据进行流式拆分
     # *************
+
+    # 测试数据拆分为2部分用作评测
+    test_df_list = []
+    for kpi_id in test_df['kpi_id'].unique():
+        test_df_tmp = test_df.query('kpi_id == {}'.format(kpi_id))
+        test_df_tmp.reset_index(drop=True, inplace=True)
+
+        test_df_list.append(test_df_tmp)
+
+    test_idx_list = [
+        int(np.floor(TEST_RATIO * len(item))) for item in test_df_list
+    ]
+
+    test_df_list_part_x, test_df_list_part_y = [], []
+    for i in range(len(test_idx_list)):
+        test_df_list_part_x.append(
+            test_df_list[i].iloc[:test_idx_list[i]]
+        )
+        test_df_list_part_y.append(
+            test_df_list[i].iloc[test_idx_list[i]:].reset_index(drop=True)
+        )
+
+    test_df_part_x = pd.concat(
+        test_df_list_part_x, axis=0, ignore_index=True
+    )
+    test_df_part_y = pd.concat(
+        test_df_list_part_y, axis=0, ignore_index=True
+    )
 
     # 以*.pkl保存预处理好的数据
     # ----------------
     file_processor = LoadSave(dir_name='../cached_data/')
     file_processor.save_data(file_name='train_df.pkl', data_file=train_df)
     file_processor.save_data(file_name='test_df.pkl', data_file=test_df)
+
+    file_processor.save_data(
+        file_name='test_df_part_x.pkl', data_file=test_df_part_x
+    )
+    file_processor.save_data(
+        file_name='test_df_part_y.pkl', data_file=test_df_part_y
+    )

@@ -17,7 +17,7 @@ from datetime import datetime
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
-from sklearn.metrics import auc
+from sklearn.metrics import auc, precision_recall_curve, roc_auc_score
 from tqdm import tqdm
 
 import lightgbm as lgb
@@ -65,10 +65,14 @@ def generator_tscv(df_list, n_folds=2, is_shuffle_train=True):
         yield i, df_train, df_valid
 
 
-def feval_adjusted_label(y_true, y_pred, threshold=0.5):
-    y_pred_label = np.where(y_pred >= 0.5, 1, 0)
-    adjusted_pred_label = adjust_predict_label(y_true, y_pred_label, 7)
-    return 'f1', round(njit_f1(y_true, adjusted_pred_label)[0], 8), True
+def feval_precision_recall_auc(y_true, y_pred):
+    '''用于lightgbm早停Metric的P-R Curve AUC计算方法'''
+    precision, recall, _ =  precision_recall_curve(
+        y_true.reshape(-1, 1), y_pred.reshape(-1, 1)
+    )
+    auc_score = auc(recall, precision)
+
+    return 'pr-auc', round(auc_score, 4), True
 
 
 if __name__ == '__main__':
@@ -79,7 +83,7 @@ if __name__ == '__main__':
 
     lgb_params = {'boosting_type': 'gbdt',
                   'objective': 'binary',
-                  'metric': 'auc',
+                  'metric': 'custom',
                   'n_estimators': 10000,
                   'num_leaves': 31,
                   'max_depth': 4,
@@ -100,10 +104,10 @@ if __name__ == '__main__':
         file_name='train_feats_list.pkl'
     )
 
-    # 训练分类器
+    # STAGE 1: 训练分类器，优化AUC Metric
     # ----------------
     y_val_score_df = np.zeros((N_FOLDS, 8))
-    trained_model_list = []
+    trained_model_list, valid_df_list = [], []
 
     print('\n[INFO] {} LightGBM training start...'.format(
         str(datetime.now())[:-4]))
@@ -125,59 +129,58 @@ if __name__ == '__main__':
             train_feats, train_label,
             eval_set=[(val_feats, val_label)],
             early_stopping_rounds=EARLY_STOPPING_ROUNDS,
-            # eval_metric=feval_adjusted_label,
+            eval_metric=feval_precision_recall_auc,
             categorical_feature=[0],
             verbose=0
         )
         trained_model_list.append(clf)
 
         # 对validation数据进行预测
-        val_pred_proba = clf.predict_proba(
+        val_pred_df = val_df[['kpi_id', 'label', 'timestamp']].copy()
+        val_pred_df['pred_proba'] = clf.predict_proba(
             val_feats, num_iteration=clf.best_iteration_
-        )
-        val_pred_label = np.where(val_pred_proba[:, 1] >= 0.5, 1, 0)
-        val_pred_df = val_df.copy()
-        val_pred_df['label'] = val_pred_label
+        )[:, 1]
+        valid_df_list.append(val_pred_df)
 
         # 评估效果
         val_score_dict = evaluate_df_score(val_df, val_pred_df)
 
         y_val_score_df[fold, 0] = fold
         y_val_score_df[fold, 1] = clf.best_iteration_
-        y_val_score_df[fold, 2] = np.mean(val_score_dict['f1_score_list'])
-        y_val_score_df[fold, 3] = np.mean(val_score_dict['precision_score_list'])
-        y_val_score_df[fold, 4] = np.mean(val_score_dict['recall_score_list'])
-        y_val_score_df[fold, 5] = val_score_dict['total_score'][0]
-        y_val_score_df[fold, 6] = val_score_dict['total_score'][1]
-        y_val_score_df[fold, 7] = val_score_dict['total_score'][2]
+        y_val_score_df[fold, 2] = None  # PR-AUC
+        y_val_score_df[fold, 3] = roc_auc_score(
+            val_pred_df['label'].values.reshape(-1, 1),
+            val_pred_df['pred_proba'].values.reshape(-1, 1)
+        )
 
-        print('-- {} folds {}({}), valid iters: {}, mean f1: {:.7f}, total f1: {:.7f}'.format(
-            str(datetime.now())[:-4], fold+1, N_FOLDS, int(y_val_score_df[fold, 1]),
-            y_val_score_df[fold, 2], y_val_score_df[fold, 5]))
+        print('-- {} folds {}({}), valid iters: {}, mean roc-auc: {:.7f}'.format(
+            str(datetime.now())[:-4], fold+1, N_FOLDS,
+            int(y_val_score_df[fold, 1]),
+            y_val_score_df[fold, 3]))
 
-    print('-- {} TOTAL, valid avg f1: {:.7f}, total f1: {:.7f}'.format(
+    print('-- {} TOTAL valid mean roc-auc: {:.7f}'.format(
         str(datetime.now())[:-4],
-        np.mean(y_val_score_df[:, 2]),
-        np.mean(y_val_score_df[:, 5])))
+        np.mean(y_val_score_df[fold, 3])
+    ))
 
     y_val_score_df = pd.DataFrame(
         y_val_score_df,
-        columns=['folds', 'best_iter',
-                 'val_mean_f1', 'val_mean_precision', 'val_mean_recall',
-                 'val_total_f1', 'val_total_precision', 'val_total_recall']
+        columns=['folds', 'best_iter', 'val_pr_auc', 'val_roc_auc']
     )
 
     print('==================================')
     print('[INFO] {} LightGBM training end...'.format(
         str(datetime.now())[:-4]))
 
-    # 保存训练好的模型与训练日志
+    # STAGE 2: 扫描Validation结果，获取最佳切分阈值
     # ----------------
-    sub_file_name = '{}_lgb_nfolds_{}_valf1_{}_valtotalf1_{}'.format(
+
+    # 保存训练好的模型/阈值与训练日志
+    # ----------------
+    sub_file_name = '{}_lgb_nfolds_{}_valrocauc_{}'.format(
         len(os.listdir('../logs/')) + 1,
         N_FOLDS,
-        str(np.round(y_val_score_df['val_mean_f1'].mean(), 6)).split('.')[1],
-        str(np.round(y_val_score_df['val_total_f1'].mean(), 6)).split('.')[1]
+        str(np.round(y_val_score_df['val_roc_auc'].mean(), 6)).split('.')[1]
     )
 
     y_val_score_df.to_csv('../logs/{}.csv'.format(sub_file_name), index=False)

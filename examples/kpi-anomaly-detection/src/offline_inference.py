@@ -28,13 +28,13 @@ np.random.seed(GLOBAL_RANDOM_SEED)
 warnings.filterwarnings('ignore')
 ###############################################################################
 
-if __name__ == '__main__':
-    MODEL_FILE_NAME = '12_lgb_nfolds_5_valf1_471692_valtotalf1_51811.pkl'
 
+def evaluate_test_lgb(model_name, file_name):
+    '''指定测试集上评估lgb模型的效果'''
     # 载入test_df数据
     # ----------------
     file_processor = LoadSave(dir_name='../cached_data/')
-    test_df = file_processor.load_data(file_name='test_df.pkl')
+    test_df = file_processor.load_data(file_name=file_name)
     trained_models = file_processor.load_data(
         dir_name='../models/',
         file_name=MODEL_FILE_NAME)
@@ -89,7 +89,7 @@ if __name__ == '__main__':
             test_score_dict['total_score'][2]
         ))
 
-    test_pred_df = test_feats_df.copy()
+    test_pred_df = test_feats_df[['kpi_id', 'label', 'timestamp']].copy()
     test_pred_df['label'] = np.where(np.mean(test_pred_proba_list, axis=0) >= 0.5, 1, 0)
     test_score_dict = evaluate_df_score(test_feats_df, test_pred_df)
     print('-- {} MEAN f1: {:.4f}, precision: {:.4f}, recall: {:.4f}, TOTAL f1: {:.4f}, precision: {:.4f}, recall: {:.4f}'.format(
@@ -101,3 +101,13 @@ if __name__ == '__main__':
         test_score_dict['total_score'][2]
     ))
     print('==================================')
+
+
+if __name__ == '__main__':
+    MODEL_FILE_NAME = '2_lgb_nfolds_5_valf1_428005_valtotalf1_474821.pkl'
+    TEST_FILE_NAME = 'test_df_part_x.pkl'  # test_df_part_x, test_df_part_y, test_df
+
+    # 载入test_df数据
+    # ----------------
+    evaluate_test_lgb(MODEL_FILE_NAME, TEST_FILE_NAME)
+    

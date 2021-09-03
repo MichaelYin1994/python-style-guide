@@ -104,6 +104,11 @@ def njit_f1(y_true_label, y_pred_label):
     return f1, precision, recall
 
 
+@njit
+def njit_pr_auc_score():
+    pass
+
+
 def evaluate_df_score(true_df, pred_df, delay=7):
     '''依据比赛[1]与论文[2]的评测方法计算KPI预测结果的分数。DataFrame必须
     包括3列："kpi_id", "label"与"timestamp"。其中timestamp列为unix-like时间戳。

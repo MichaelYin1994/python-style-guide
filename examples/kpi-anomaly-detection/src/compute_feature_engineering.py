@@ -169,7 +169,7 @@ def compute_feature_engineering_single_kpi(df=None):
 
     # 计算滑窗均值
     # *************
-    for window_minutes in [1, 2, 3, 6, 10, 16, 32, 60, 120, 240, 360, 720, 1440, 2880, 7200, 10080]:
+    for window_minutes in [1, 2, 3, 6, 10, 16, 32, 60, 120, 240, 360, 720, 1440, 2880, 7200]:
         window_seconds = int(window_minutes * 60)
 
         df_feats.append(
@@ -181,7 +181,7 @@ def compute_feature_engineering_single_kpi(df=None):
 
     # 计算滑窗标准差
     # *************
-    for window_minutes in [1, 2, 3, 6, 10, 16, 32, 60, 120, 240, 360, 720, 1440, 2880, 7200, 10080]:
+    for window_minutes in [1, 2, 3, 6, 10, 16, 32, 60, 120, 240, 360, 720, 1440, 2880, 7200]:
         window_seconds = int(window_minutes * 60)
 
         df_feats.append(

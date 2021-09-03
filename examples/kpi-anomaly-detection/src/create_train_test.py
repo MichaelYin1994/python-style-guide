@@ -112,7 +112,7 @@ if __name__ == '__main__':
     # 2. 整体测试数据进行流式拆分
     # *************
 
-    # 测试数据拆分为2部分用作评测
+    # 测试数据拆分为2部分: test_part_x, test_part_y用作评测
     test_df_list = []
     for kpi_id in test_df['kpi_id'].unique():
         test_df_tmp = test_df.query('kpi_id == {}'.format(kpi_id))
@@ -139,6 +139,9 @@ if __name__ == '__main__':
     test_df_part_y = pd.concat(
         test_df_list_part_y, axis=0, ignore_index=True
     )
+
+    # TODO(zhuoyin94@163.com): 流式拆分
+
 
     # 以*.pkl保存预处理好的数据
     # ----------------

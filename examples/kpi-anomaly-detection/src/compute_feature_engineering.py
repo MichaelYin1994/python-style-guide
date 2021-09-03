@@ -38,7 +38,6 @@ def njit_sliding_window_mean(timestamp, sensor_vals, window_size):
     '''以one-pass的方式计算array的每一个元素给定window_size内的mean。
     并采用LLVM编译器进行加速。
     '''
-    # TODO(zhuoyin94@163.com): 给定weight，按权求均值
     if not (len(timestamp) == len(sensor_vals)):
         raise ValueError(
             'Timestamp array size mismatch with the sensor_vals array !'
@@ -68,11 +67,11 @@ def njit_sliding_window_mean(timestamp, sensor_vals, window_size):
     return window_mean_vals
 
 
+@njit
 def njit_sliding_window_std(timestamp, sensor_vals, window_size):
     '''以one-pass的方式计算array的每一个元素给定window_size内的std。
     并采用LLVM编译器进行加速。
     '''
-    # TODO(zhuoyin94@163.com): 给定weight，按权求均值
     if not (len(timestamp) == len(sensor_vals)):
         raise ValueError(
             'Timestamp array size mismatch with the sensor_vals array !'
@@ -105,6 +104,15 @@ def njit_sliding_window_std(timestamp, sensor_vals, window_size):
     return window_std_vals
 
 
+def njit_sliding_window_weighted_moving_mean():
+    pass
+
+
+def njit_sliding_window_exponentially_weighted_moving_mean():
+    pass
+
+
+
 def njit_sliding_window_max(timestamp, array, weight, window_size):
     '''以stream形式，以one-pass的方式计算array的每一个元素给定window_size
     内的std。并采用LLVM编译器进行加速。
@@ -119,11 +127,11 @@ def njit_sliding_window_min(timestamp, array, weight, window_size):
 
 
 
-def njit_sliding_window_skew(timestamp, array, weight, window_size):
+def njit_sliding_window_skew(timestamp, array, window_size):
     pass
 
 
-def njit_sliding_window_kurtosis(timestamp, array, weight, window_size):
+def njit_sliding_window_kurtosis(timestamp, array, window_size):
     pass
 
 
@@ -169,7 +177,7 @@ def compute_feature_engineering_single_kpi(df=None):
 
     # 计算滑窗均值
     # *************
-    for window_minutes in [1, 2, 3, 6, 10, 16, 32, 60, 120, 240, 360, 720, 1440, 2880, 7200]:
+    for window_minutes in [1, 2, 3, 6, 10, 16, 32, 60, 120, 240, 360, 720, 1440, 2880]:
         window_seconds = int(window_minutes * 60)
 
         df_feats.append(
@@ -181,7 +189,7 @@ def compute_feature_engineering_single_kpi(df=None):
 
     # 计算滑窗标准差
     # *************
-    for window_minutes in [1, 2, 3, 6, 10, 16, 32, 60, 120, 240, 360, 720, 1440, 2880, 7200]:
+    for window_minutes in [1, 2, 3, 6, 10, 16, 32, 60, 120, 240, 360, 720, 1440, 2880]:
         window_seconds = int(window_minutes * 60)
 
         df_feats.append(
@@ -207,7 +215,7 @@ def compute_feature_engineering_single_kpi(df=None):
 
     # 短时shift
     # *************
-    for shift_minutes in [i * min_interval_minutes for i in range(0, 256, 2)]:
+    for shift_minutes in [i * min_interval_minutes for i in range(0, 512, 4)]:
         df_feats.append(
             njit_time_shift(
                 timestamp_array, sensor_array, last_seconds=shift_minutes * 60
@@ -265,10 +273,6 @@ if __name__ == '__main__':
         feats_df_list = list(tqdm(p.imap(
             compute_feature_engineering_single_kpi, train_df_list
         ), total=len(train_df_list)))
-
-    # feats_df = pd.concat(
-    #     feats_df_list, axis=0, ignore_index=True
-    # )
 
     # 存储特征数据
     # ----------------

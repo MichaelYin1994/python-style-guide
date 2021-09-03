@@ -19,6 +19,8 @@ import tensorflow as tf
 from numba import njit
 from tqdm import tqdm
 
+from sklearn.metrics import auc, precision_recall_curve
+
 warnings.filterwarnings('ignore')
 ###############################################################################
 @njit
@@ -104,9 +106,14 @@ def njit_f1(y_true_label, y_pred_label):
     return f1, precision, recall
 
 
-@njit
-def njit_pr_auc_score():
-    pass
+def pr_auc_score(y_true, y_pred):
+    '''PR Curve AUC计算方法'''
+    precision, recall, _ =  precision_recall_curve(
+        y_true.reshape(-1, 1), y_pred.reshape(-1, 1)
+    )
+    auc_score = auc(recall, precision)
+
+    return auc_score
 
 
 def evaluate_df_score(true_df, pred_df, delay=7):

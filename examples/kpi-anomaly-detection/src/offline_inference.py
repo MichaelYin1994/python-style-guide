@@ -35,7 +35,7 @@ def evaluate_test_lgb(model_name, file_name):
     # ----------------
     file_processor = LoadSave(dir_name='../cached_data/')
     test_df = file_processor.load_data(file_name=file_name)
-    trained_models = file_processor.load_data(
+    trained_models, threshold_list = file_processor.load_data(
         dir_name='../models/',
         file_name=MODEL_FILE_NAME)
 
@@ -70,14 +70,16 @@ def evaluate_test_lgb(model_name, file_name):
         str(datetime.now())[:-4]))
     print('==================================')
     test_pred_proba_list = []
-    for fold, model in enumerate(trained_models[-2:]):
+    for fold, (model, threshold) in enumerate(
+            zip(trained_models[-1:], threshold_list[-1:])
+        ):
         test_pred_proba_list.append(model.predict_proba(
             test_feats, num_iteration=model.best_iteration_
         )[:, 1])
 
         # 评估效果
-        test_pred_df = test_feats_df.copy()
-        test_pred_df['label'] = np.where(test_pred_proba_list[-1] >= 0.5, 1, 0)
+        test_pred_df = test_feats_df[['kpi_id', 'label', 'timestamp']].copy()
+        test_pred_df['label'] = np.where(test_pred_proba_list[-1] >= threshold, 1, 0)
         test_score_dict = evaluate_df_score(test_feats_df, test_pred_df)
 
         print('-- {} MEAN f1: {:.4f}, precision: {:.4f}, recall: {:.4f}, TOTAL f1: {:.4f}, precision: {:.4f}, recall: {:.4f}'.format(
@@ -88,23 +90,11 @@ def evaluate_test_lgb(model_name, file_name):
             test_score_dict['total_score'][1],
             test_score_dict['total_score'][2]
         ))
-
-    test_pred_df = test_feats_df[['kpi_id', 'label', 'timestamp']].copy()
-    test_pred_df['label'] = np.where(np.mean(test_pred_proba_list, axis=0) >= 0.5, 1, 0)
-    test_score_dict = evaluate_df_score(test_feats_df, test_pred_df)
-    print('-- {} MEAN f1: {:.4f}, precision: {:.4f}, recall: {:.4f}, TOTAL f1: {:.4f}, precision: {:.4f}, recall: {:.4f}'.format(
-        str(datetime.now())[:-4], np.mean(test_score_dict['f1_score_list']),
-        np.mean(test_score_dict['precision_score_list']),
-        np.mean(test_score_dict['recall_score_list']),
-        test_score_dict['total_score'][0],
-        test_score_dict['total_score'][1],
-        test_score_dict['total_score'][2]
-    ))
     print('==================================')
 
 
 if __name__ == '__main__':
-    MODEL_FILE_NAME = '2_lgb_nfolds_5_valf1_428005_valtotalf1_474821.pkl'
+    MODEL_FILE_NAME = '2_lgb_nfolds_5_valprauc_502895_valrocauc_885151.pkl'
     TEST_FILE_NAME = 'test_df_part_x.pkl'  # test_df_part_x, test_df_part_y, test_df
 
     # 载入test_df数据

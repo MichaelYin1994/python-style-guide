@@ -21,10 +21,11 @@ from sklearn.metrics import auc, precision_recall_curve, roc_auc_score
 from tqdm import tqdm
 
 import lightgbm as lgb
-from utils import LoadSave, evaluate_df_score, adjust_predict_label, njit_f1
+from utils import LoadSave, evaluate_df_score, adjust_predict_label, njit_f1, pr_auc_score
 
 GLOBAL_RANDOM_SEED = 2021
 ###############################################################################
+
 def generator_tscv(df_list, n_folds=2, is_shuffle_train=True):
     '''Generator of the data'''
 
@@ -67,18 +68,18 @@ def generator_tscv(df_list, n_folds=2, is_shuffle_train=True):
 
 def feval_precision_recall_auc(y_true, y_pred):
     '''用于lightgbm早停Metric的P-R Curve AUC计算方法'''
-    precision, recall, _ =  precision_recall_curve(
+    auc_score = pr_auc_score(
         y_true.reshape(-1, 1), y_pred.reshape(-1, 1)
     )
-    auc_score = auc(recall, precision)
 
-    return 'pr-auc', round(auc_score, 4), True
+    return 'pr-auc', round(auc_score, 7), True
 
 
 if __name__ == '__main__':
     # 载入特征数据
     # ----------------
     N_FOLDS = 5
+    N_SEARCH = 150
     EARLY_STOPPING_ROUNDS = 200
 
     lgb_params = {'boosting_type': 'gbdt',
@@ -106,14 +107,15 @@ if __name__ == '__main__':
 
     # STAGE 1: 训练分类器，优化AUC Metric
     # ----------------
-    y_val_score_df = np.zeros((N_FOLDS, 8))
+    y_val_score_df = np.zeros((N_FOLDS, 6))
     trained_model_list, valid_df_list = [], []
 
     print('\n[INFO] {} LightGBM training start...'.format(
         str(datetime.now())[:-4]))
     print('==================================')
     print('-- train shape: {}, total folds: {}'.format(
-        (np.sum([len(df) for df in train_feats_list]), train_feats_list[0].shape[1]),
+        (np.sum([len(df) for df in train_feats_list]),
+         train_feats_list[0].shape[1]),
         N_FOLDS))
 
     for fold, train_df, val_df in generator_tscv(train_feats_list, N_FOLDS):
@@ -143,29 +145,33 @@ if __name__ == '__main__':
         valid_df_list.append(val_pred_df)
 
         # 评估效果
-        val_score_dict = evaluate_df_score(val_df, val_pred_df)
-
         y_val_score_df[fold, 0] = fold
         y_val_score_df[fold, 1] = clf.best_iteration_
-        y_val_score_df[fold, 2] = None  # PR-AUC
+        y_val_score_df[fold, 2] = pr_auc_score(
+            val_pred_df['label'].values.reshape(-1, 1),
+            val_pred_df['pred_proba'].values.reshape(-1, 1)
+        )
         y_val_score_df[fold, 3] = roc_auc_score(
             val_pred_df['label'].values.reshape(-1, 1),
             val_pred_df['pred_proba'].values.reshape(-1, 1)
         )
 
-        print('-- {} folds {}({}), valid iters: {}, mean roc-auc: {:.7f}'.format(
+        print('-- {} folds {}({}), valid iters: {}, mean pr-auc {:7f}, roc-auc: {:.7f}'.format(
             str(datetime.now())[:-4], fold+1, N_FOLDS,
             int(y_val_score_df[fold, 1]),
+            y_val_score_df[fold, 2],
             y_val_score_df[fold, 3]))
 
-    print('-- {} TOTAL valid mean roc-auc: {:.7f}'.format(
+    print('-- {} TOTAL valid mean pr-auc: {:.7f}, roc-auc: {:.7f}'.format(
         str(datetime.now())[:-4],
+        y_val_score_df[fold, 2],
         np.mean(y_val_score_df[fold, 3])
     ))
 
     y_val_score_df = pd.DataFrame(
         y_val_score_df,
-        columns=['folds', 'best_iter', 'val_pr_auc', 'val_roc_auc']
+        columns=['folds', 'best_iter', 'val_pr_auc',
+                 'val_roc_auc', 'val_total_f1', 'val_best_threshold']
     )
 
     print('==================================')
@@ -174,12 +180,38 @@ if __name__ == '__main__':
 
     # STAGE 2: 扫描Validation结果，获取最佳切分阈值
     # ----------------
+    decision_threshold_list, best_f1_list = [], []
 
-    # 保存训练好的模型/阈值与训练日志
+    for fold in tqdm(range(N_FOLDS)):
+        decision_threshold_list_tmp = []
+        val_df = valid_df_list[fold]
+        val_pred_df = val_df.copy()
+
+        best_f1, best_threshold = 0, 0
+        for threshold in np.linspace(0.1, 0.9, N_SEARCH):
+            val_pred_df['label'] = np.where(
+                val_pred_df['pred_proba'] > threshold, 1, 0
+            )
+            eval_score = evaluate_df_score(val_df, val_pred_df)
+
+            if eval_score['total_score'][0] > best_f1:
+                best_f1 = eval_score['total_score'][0]
+                best_threshold = threshold
+        print('-- {} folds {}({}), best threshold: {:5f}, best f1: {:.5f}'.format(
+            str(datetime.now())[:-4], fold+1, N_FOLDS,
+            best_threshold, best_f1))
+        decision_threshold_list.append(best_threshold)
+        best_f1_list.append(best_f1)
+
+    y_val_score_df['val_total_f1'] = best_f1_list
+    y_val_score_df['val_best_threshold'] = decision_threshold_list
+
+    # STAGE 3: 保存训练好的模型/阈值与训练日志
     # ----------------
-    sub_file_name = '{}_lgb_nfolds_{}_valrocauc_{}'.format(
+    sub_file_name = '{}_lgb_nfolds_{}_valprauc_{}_valrocauc_{}'.format(
         len(os.listdir('../logs/')) + 1,
         N_FOLDS,
+        str(np.round(y_val_score_df['val_pr_auc'].mean(), 6)).split('.')[1],
         str(np.round(y_val_score_df['val_roc_auc'].mean(), 6)).split('.')[1]
     )
 
@@ -187,4 +219,4 @@ if __name__ == '__main__':
     file_processor = LoadSave(dir_name='../models/')
     file_processor.save_data(
         file_name='{}.pkl'.format(sub_file_name),
-        data_file=trained_model_list)
+        data_file=[trained_model_list, decision_threshold_list])

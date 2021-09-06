@@ -35,9 +35,7 @@ warnings.filterwarnings('ignore')
 ###############################################################################
 @njit
 def njit_sliding_window_mean(timestamp, sensor_vals, window_size):
-    '''以one-pass的方式计算array的每一个元素给定window_size内的mean。
-    并采用LLVM编译器进行加速。
-    '''
+    '''以one-pass的方式计算array的每一个元素给定window_size内的mean。'''
     if not (len(timestamp) == len(sensor_vals)):
         raise ValueError(
             'Timestamp array size mismatch with the sensor_vals array !'
@@ -69,9 +67,7 @@ def njit_sliding_window_mean(timestamp, sensor_vals, window_size):
 
 @njit
 def njit_sliding_window_std(timestamp, sensor_vals, window_size):
-    '''以one-pass的方式计算array的每一个元素给定window_size内的std。
-    并采用LLVM编译器进行加速。
-    '''
+    '''以one-pass的方式计算array的每一个元素给定window_size内的std。'''
     if not (len(timestamp) == len(sensor_vals)):
         raise ValueError(
             'Timestamp array size mismatch with the sensor_vals array !'
@@ -104,8 +100,17 @@ def njit_sliding_window_std(timestamp, sensor_vals, window_size):
     return window_std_vals
 
 
-def njit_sliding_window_weighted_moving_mean():
-    pass
+def njit_sliding_window_weighted_moving_mean(
+        timestamp, sensor_vals, window_size, interval
+    ):
+    '''以one-pass的方式计算array的每一个元素给定window_size内的WMA。'''
+    if not (len(timestamp) == len(sensor_vals)):
+        raise ValueError(
+            'Timestamp array size mismatch with the sensor_vals array !'
+        )
+
+    # 滚动计算每一时刻给定时间窗口内的统计量
+    timestamp
 
 
 def njit_sliding_window_exponentially_weighted_moving_mean():
@@ -113,31 +118,27 @@ def njit_sliding_window_exponentially_weighted_moving_mean():
 
 
 
-def njit_sliding_window_max(timestamp, array, weight, window_size):
-    '''以stream形式，以one-pass的方式计算array的每一个元素给定window_size
-    内的std。并采用LLVM编译器进行加速。
-    '''
-    sum_vals = None
-
+def njit_sliding_window_max():
+    '''以stream形式，以one-pass的方式计算array的每一个元素给定window_size内的max。'''
     pass
 
 
-def njit_sliding_window_min(timestamp, array, weight, window_size):
+def njit_sliding_window_min():
     pass
 
 
 
-def njit_sliding_window_skew(timestamp, array, window_size):
+def njit_sliding_window_skew():
     pass
 
 
-def njit_sliding_window_kurtosis(timestamp, array, window_size):
+def njit_sliding_window_kurtosis():
     pass
 
 
 @njit
 def njit_time_shift(timestamp, sensor_vals, last_seconds):
-    '''以one-pass的方式计算array的每一个元素给定window_size内的mean。
+    '''以one-pass的方式计算array的每一个元素给定offline_inference内的shift。
     并采用LLVM编译器进行加速。
     '''
     if not (len(timestamp) == len(sensor_vals)):
@@ -177,7 +178,17 @@ def compute_feature_engineering_single_kpi(df=None):
 
     # 计算滑窗均值
     # *************
-    for window_minutes in [1, 2, 3, 6, 10, 16, 32, 60, 120, 240, 360, 720, 1440, 2880]:
+    for window_minutes in [1, 2, 3, 6, 10, 16, 32, 60, 120, 240, 360, 720, 1440]:
+        window_seconds = int(window_minutes * 60)
+
+        df_feats.append(
+            njit_sliding_window_mean(
+                timestamp_array, sensor_array, window_size=window_seconds
+            ).reshape(-1, 1)
+        )
+        df_feats_names.append('window_mean_last_{}'.format(window_minutes))
+
+    for window_minutes in [1440 + 360 * i for i in range(1, 8)]:
         window_seconds = int(window_minutes * 60)
 
         df_feats.append(
@@ -189,7 +200,7 @@ def compute_feature_engineering_single_kpi(df=None):
 
     # 计算滑窗标准差
     # *************
-    for window_minutes in [1, 2, 3, 6, 10, 16, 32, 60, 120, 240, 360, 720, 1440, 2880]:
+    for window_minutes in [1, 2, 3, 6, 10, 16, 32, 60, 120, 240, 360, 720, 1440]:
         window_seconds = int(window_minutes * 60)
 
         df_feats.append(

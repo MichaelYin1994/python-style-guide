@@ -28,7 +28,6 @@ np.random.seed(GLOBAL_RANDOM_SEED)
 warnings.filterwarnings('ignore')
 ###############################################################################
 
-
 def evaluate_test_lgb(model_name, file_name):
     '''指定测试集上评估lgb模型的效果'''
     # 载入test_df数据
@@ -94,8 +93,8 @@ def evaluate_test_lgb(model_name, file_name):
 
 
 if __name__ == '__main__':
-    MODEL_FILE_NAME = '2_lgb_nfolds_5_valprauc_502895_valrocauc_885151.pkl'
-    TEST_FILE_NAME = 'test_df_part_x.pkl'  # test_df_part_x, test_df_part_y, test_df
+    MODEL_FILE_NAME = '3_lgb_nfolds_5_valprauc_459143_valrocauc_86955.pkl'
+    TEST_FILE_NAME = 'test_df.pkl'  # test_df_part_x, test_df_part_y, test_df
 
     # 载入test_df数据
     # ----------------

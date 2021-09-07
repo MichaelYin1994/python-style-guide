@@ -10,6 +10,7 @@
 本模块(test_stream_processing.py)用于测试流特征工程的正确性。
 '''
 
+import time
 import warnings
 import pandas as pd
 from tqdm import tqdm
@@ -76,8 +77,7 @@ def njit_sliding_window_mean(timestamp, sensor_vals, window_size):
 
                 front += 1
                 seconds_gap = timestamp[rear] - timestamp[front]
-        # window_mean_vals[rear] = window_cum_sum / window_count
-        window_mean_vals[rear] = np.mean(sensor_vals[front:(rear+1)])
+        window_mean_vals[rear] = window_cum_sum / window_count
 
     return window_mean_vals
 
@@ -114,9 +114,9 @@ def njit_sliding_window_std(timestamp, sensor_vals, window_size):
                 front += 1
                 seconds_gap = timestamp[rear] - timestamp[front]
 
-        # window_std_vals[rear] = window_cum_sum_square / window_count - \
-        #     (window_cum_sum / window_count)**2
-        window_std_vals[rear] = np.std(sensor_vals[front:(rear+1)])
+        window_std_vals[rear] = window_cum_sum_square / window_count - \
+            (window_cum_sum / window_count)**2
+        window_std_vals[rear] = np.sqrt(window_std_vals[rear])
 
     return window_std_vals
 
@@ -158,7 +158,8 @@ class ArrayDeque():
     deque_front: {int-like}
         用于模拟deque范围的deque的头指针。
     deque_rear: {int-like}
-        用于模拟deque范围的deque的尾指针，永远指向deque最后一个有值元素索引的下一个元素索引。
+        用于模拟deque范围的deque的尾指针，永远指向deque最后一个有值元素索引的
+        下一个元素索引。
     deque_stats: {dict-like}
         deque内部不同时间范围的基础统计量。
 
@@ -179,7 +180,9 @@ class ArrayDeque():
         self.deque_front, self.deque_rear = 0, 0
 
     def push(self, timestep, x):
-        '''将一组元素入队'''
+        '''将一组元素入队，并且当首位元素范围不满足最大允许时间范围，
+        将尾部元素出队，直到满足范围要求为止。
+        '''
         # (timestamp, x) 入队
         self.deque_timestamp[self.deque_rear] = timestep
         self.deque_vals[self.deque_rear] = x
@@ -201,19 +204,19 @@ class ArrayDeque():
         if self.is_full():
             rear = len(self.deque_timestamp[self.deque_front:])
 
-            self.deque_timestamp = self.adjust_deque_size(
-                self.deque_timestamp[self.deque_front:], self.deque_size
+            new_deque_timestamp = np.zeros(
+                (self.deque_size, ), dtype=np.int64
             )
-            self.deque_vals = self.adjust_deque_size(
-                self.deque_vals[self.deque_front:], self.deque_size
-            )
-            self.deque_front, self.deque_rear = 0, rear
+            new_deque_timestamp[:rear] = self.deque_timestamp[self.deque_front:]
+            self.deque_timestamp = new_deque_timestamp
 
-    def adjust_deque_size(self, deque, target_deque_size):
-        '''调整deque数组的尺寸到target_deque_size'''
-        new_deque = np.zeros((target_deque_size, ))
-        new_deque[:len(deque)] = deque
-        return new_deque
+            new_deque_vals = np.zeros(
+                (self.deque_size, ), dtype=np.float64
+            )
+            new_deque_vals[:rear] = self.deque_vals[self.deque_front:]
+            self.deque_vals = new_deque_vals
+
+            self.deque_front, self.deque_rear = 0, rear
 
     def is_full(self):
         '''判断deque是否空间满'''
@@ -226,7 +229,7 @@ class ArrayDeque():
 
         # 载入stream参数
         window_size = int(window_size)
-        field_name = 'mean_{}'.format(window_size)
+        field_name = 'mean_' + str(window_size)
 
         if field_name in self.deque_stats:
             dist2end, window_sum = self.deque_stats[field_name]
@@ -257,7 +260,7 @@ class ArrayDeque():
 
         # 载入stream参数
         window_size = int(window_size)
-        field_name = 'std_{}'.format(window_size)
+        field_name = 'std_' + str(window_size)
 
         if field_name in self.deque_stats:
             dist2end, window_sum, window_squre_sum = self.deque_stats[field_name]
@@ -359,11 +362,10 @@ class ArrayDeque():
         return dist2end, window_sum, mean_res
 
 
-
 if __name__ == '__main__':
     # 生成kpi仿真数据（单条kpi曲线）
     # *******************
-    N_POINTS = 300000
+    N_POINTS = 1000000
     MIN_INTERVAL = 20
     MAX_TIME_SPAN = int(5 * 24 * 3600)
     WINDOW_SIZE = int(6 * 3600)
@@ -381,17 +383,17 @@ if __name__ == '__main__':
         # 元素入队
         stream_deque.push(timestep, sensor_val)
 
-        # # 统计量计算
-        # window_mean_results.append(
-        #     stream_deque.get_window_mean(window_size=WINDOW_SIZE)
-        # )
-        # window_std_results.append(
-        #     stream_deque.get_window_std(window_size=WINDOW_SIZE)
-        # )
+        # 统计量计算
+        window_mean_results.append(
+            stream_deque.get_window_mean(WINDOW_SIZE)
+        )
+        window_std_results.append(
+            stream_deque.get_window_std(WINDOW_SIZE)
+        )
 
         # 空间拓展
         stream_deque.update()
-        '''
+
     window_mean_results = np.array(window_mean_results)
     window_std_results = np.array(window_std_results)
 
@@ -418,4 +420,3 @@ if __name__ == '__main__':
         np.allclose(window_std_results, window_std_results_onepass)
     ))
     print('***************')
-    '''

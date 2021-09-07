@@ -54,7 +54,7 @@ def njit_sliding_window_mean(timestamp, sensor_vals, window_size):
 
         # 若是头尾指针窗口时间差不满足范围，则收缩窗口
         if seconds_gap > window_size:
-            while(front < rear and seconds_gap > window_size):
+            while(front <= rear and seconds_gap > window_size):
                 window_count -= 1
                 window_cum_sum -= sensor_vals[front]
 
@@ -87,15 +87,17 @@ def njit_sliding_window_std(timestamp, sensor_vals, window_size):
 
         # 若是头尾指针窗口时间差不满足范围，则收缩窗口
         if seconds_gap > window_size:
-            while(front < rear and seconds_gap > window_size):
+            while(front <= rear and seconds_gap > window_size):
                 window_count -= 1
                 window_cum_sum -= sensor_vals[front]
                 window_cum_sum_square -= sensor_vals[front]**2
 
                 front += 1
+                seconds_gap = timestamp[rear] - timestamp[front]
 
         window_std_vals[rear] = window_cum_sum_square / window_count - \
             (window_cum_sum / window_count)**2
+        window_std_vals[rear] = np.sqrt(window_std_vals[rear])
 
     return window_std_vals
 
@@ -110,7 +112,7 @@ def njit_sliding_window_weighted_moving_mean(
         )
 
     # 滚动计算每一时刻给定时间窗口内的统计量
-    timestamp
+    pass
 
 
 def njit_sliding_window_exponentially_weighted_moving_mean():

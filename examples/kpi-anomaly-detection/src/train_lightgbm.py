@@ -10,18 +10,16 @@
 '''
 
 import gc
-import multiprocessing as mp
 import os
 from datetime import datetime
 
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
-from sklearn.metrics import auc, precision_recall_curve, roc_auc_score
+from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 
-import lightgbm as lgb
-from utils import LoadSave, evaluate_df_score, adjust_predict_label, njit_f1, pr_auc_score
+from utils import LoadSave, evaluate_df_score, pr_auc_score
 
 GLOBAL_RANDOM_SEED = 2021
 ###############################################################################

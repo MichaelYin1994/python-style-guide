@@ -66,7 +66,7 @@ if __name__ == '__main__':
     # 全局化参数
     # ----------------
     NROWS = None
-    IS_PLOT_KPI = False
+    IS_PLOT_KPI = True
     TEST_RATIO = 0.3
     TRAIN_PATH = '../data/kpi competition/'
 

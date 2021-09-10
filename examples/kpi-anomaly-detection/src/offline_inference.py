@@ -93,7 +93,7 @@ def evaluate_test_lgb(model_name, file_name):
 
 
 if __name__ == '__main__':
-    MODEL_FILE_NAME = '3_lgb_nfolds_5_valprauc_459143_valrocauc_86955.pkl'
+    MODEL_FILE_NAME = '8_lgb_nfolds_5_valprauc_459147_valrocauc_86955.pkl'
     TEST_FILE_NAME = 'test_df.pkl'  # test_df_part_x, test_df_part_y, test_df
 
     # 载入test_df数据

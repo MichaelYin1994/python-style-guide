@@ -134,14 +134,18 @@ ArrayDeque_spec = [
 ]
 @jitclass(ArrayDeque_spec)
 class ArrayDeque():
-    '''对于时序流数据（stream data）的高效存储实现。
+    '''对于时序流数据（stream data）的高效存储与基础特征抽取方法的实现。
 
     采用numpy array模拟deque，deque保存指定时间区间范围内的时序值。每当时间
     范围不满足条件的时候，通过指针移动模拟队尾元素出队；当array满的时候，
-    通过重新分配array内存的方法，重组array内容。
+    动态重新分配deque的内存空间。
 
     我们实现的ArrayDeque在设计时便考虑了数据流时间戳不均匀的问题，通过移动指针
-    的方式高效的实现元素的入队和出队。
+    的方式高效的实现元素的入队和出队，保证deque内只有指定时间范围内的时序数据。
+
+    ArrayDeque的实现中，同时设计了多种针对流数据的特征抽取算法。包括：
+    - 给定时间窗口内均值(mean)抽取算法。
+    - 给定时间窗口内标准差(std)抽取算法。
 
     @Attributes:
     ----------
@@ -200,7 +204,7 @@ class ArrayDeque():
         self.deque_rear += 1
 
     def update(self):
-        '''若队满，则重新调整队列数组内存空间'''
+        '''若队满，则动态调整队列数组内存空间'''
         if self.is_full():
             rear = len(self.deque_timestamp[self.deque_front:])
 
@@ -222,10 +226,14 @@ class ArrayDeque():
         '''判断deque是否空间满'''
         return self.deque_rear >= self.deque_size
 
-    def get_window_mean(self, window_size=120):
-        '''按stream的方式，抽取mean统计量'''
+    def check_window_size(self, window_size):
+        '''检查window_size参数是否合法'''
         if window_size > self.max_time_span or window_size < self.interval:
             raise ValueError('Invalid input window size !')
+
+    def get_window_mean(self, window_size=120):
+        '''按stream的方式，抽取mean统计量'''
+        self.check_window_size(window_size)
 
         # 载入stream参数
         window_size = int(window_size)
@@ -248,26 +256,20 @@ class ArrayDeque():
         )
 
         # 更新预置参数
-        new_params = np.array([dist2end, window_sum], dtype=np.float64)
+        new_params = np.array(
+            [dist2end, window_sum], dtype=np.float64
+        )
         self.deque_stats[field_name] = new_params
 
         return mean_res
 
     def get_window_std(self, window_size=120):
         '''按stream的方式，抽取std统计量'''
-        if window_size > self.max_time_span or window_size < self.interval:
-            raise ValueError('Invalid input window size !')
+        self.check_window_size(window_size)
 
         # 载入stream参数
         window_size = int(window_size)
         field_name = 'std_' + str(window_size)
-
-        if field_name in self.deque_stats:
-            dist2end, window_sum, window_squre_sum = self.deque_stats[field_name]
-        else:
-            window_sum = np.nan
-            window_squre_sum = np.nan
-            dist2end = self.deque_rear - self.deque_front - 1
 
         if field_name in self.deque_stats:
             dist2end, window_sum, window_squre_sum = self.deque_stats[field_name]
@@ -287,24 +289,74 @@ class ArrayDeque():
         )
 
         # 更新预置参数
-        new_params = np.array([dist2end, window_sum, window_squre_sum], dtype=np.float64)
+        new_params = np.array(
+            [dist2end, window_sum, window_squre_sum], dtype=np.float64
+        )
         self.deque_stats[field_name] = new_params
 
         return mean_res
 
-    def get_window_shift(self):
-        pass
+    def get_window_shift(self, n_shift):
+        '''抽取当前时刻给定上n_shift个的数据的值'''
+        if n_shift > (self.deque_rear - self.deque_front):
+            return np.nan
+        else:
+            return self.deque_vals[self.deque_rear - 1]
 
-    def get_window_median(self):
+    def get_window_median(self, window_size):
+        '''抽取给定window_size内的median统计量'''
+        self.check_window_size(window_size)
+
+        # 载入stream参数
+        window_size = int(window_size)
+        field_name = 'median_' + str(window_size)
+
+        if field_name in self.deque_stats:
+            dist2end, _ = self.deque_stats[field_name]
+        else:
+            dist2end = self.deque_rear - self.deque_front - 1
+
+        start = int(self.deque_rear - dist2end - 1)
+        end = int(self.deque_rear - 1)
+
+        # 重新计算参数
+        dist2end, median_res = self.compute_window_median(
+            self.deque_timestamp,
+            self.deque_vals,
+            start, end, window_size
+        )
+
+        # 更新预置参数
+        new_params = np.array(
+            [dist2end, median_res], dtype=np.float64
+        )
+        self.deque_stats[field_name] = new_params
+
+        return median_res
+
+    def get_window_range_count(self, window_size, low, high):
         pass
 
     def get_window_max(self):
         pass
 
-    def get_window_hog_1d(self):
+    def get_window_min(self):
         pass
 
-    def compute_window_std(self, timestamp, sensor_vals,
+    def get_window_hog_1d(self, window_size, n_bins):
+        '''抽取给定window_size内的1-D Histogram of Gradient信息'''
+        pass
+
+    def get_window_weighted_mean(self, window_size, weight_array):
+        '''计算指定window_size内的带权平均值'''
+        pass
+
+    def get_exponential_weighted_mean(self, window_size, alpha):
+        ''''''
+        pass
+
+    def compute_window_std(self,
+                           timestamp, sensor_vals,
                            start, end,
                            window_sum, window_squre_sum,
                            max_time_span):
@@ -331,8 +383,9 @@ class ArrayDeque():
         dist2end = end - start + 1
         window_sum = window_sum + window_sum_delta
         window_squre_sum = window_squre_sum + window_squre_sum_delta
-        std_res = window_squre_sum / dist2end - (window_sum / dist2end)**2
-        std_res = np.sqrt(std_res)
+        std_res = np.sqrt(
+            window_squre_sum / dist2end - (window_sum / dist2end)**2
+        )
 
         return dist2end, window_sum, window_squre_sum, std_res
 
@@ -361,6 +414,23 @@ class ArrayDeque():
 
         return dist2end, window_sum, mean_res
 
+    def compute_window_median(self, timestamp, sensor_vals,
+                              start, end, max_time_span):
+        '''计算窗口内部的median统计量'''
+        # STEP 1: 时间窗口放缩，统计量修正
+        time_gap = timestamp[end] - timestamp[start]
+
+        if time_gap > max_time_span:
+            while(start <= end and time_gap > max_time_span):
+                start += 1
+                time_gap = timestamp[end] - timestamp[start]
+
+        # STEP 2: 统计量更新
+        dist2end = end - start + 1
+        median_res = np.median(sensor_vals[start:(end+1)])
+
+        return dist2end, median_res
+
 
 if __name__ == '__main__':
     # 生成kpi仿真数据（单条kpi曲线）
@@ -379,6 +449,8 @@ if __name__ == '__main__':
 
     window_mean_results = []
     window_std_results = []
+    window_shift_results = []
+    window_median_results = []
     for timestep, sensor_val in tqdm(df[['timestamp', 'value']].values):
         # 元素入队
         stream_deque.push(timestep, sensor_val)
@@ -390,7 +462,6 @@ if __name__ == '__main__':
         window_std_results.append(
             stream_deque.get_window_std(WINDOW_SIZE)
         )
-
         # 空间拓展
         stream_deque.update()
 

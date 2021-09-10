@@ -20,7 +20,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
-from utils import LoadSave, evaluate_df_score, pr_auc_score
+from utils import LoadSave, evaluate_df_score, pr_auc_score, LiteModel
 
 GLOBAL_RANDOM_SEED = 2021
 ###############################################################################
@@ -109,26 +109,26 @@ def build_model(verbose=False, is_compile=True, **kwargs):
     # Bottleneck network structure
     # -------------------
     layer_dense_init = tf.keras.layers.Dense(
-        units=128, activation='selu'
+        units=128, activation='relu'
     )(layer_concat_feats)
 
     x = tf.keras.layers.BatchNormalization()(layer_dense_init)
     x = tf.keras.layers.Dropout(0.4)(x)
 
     x = tf.keras.layers.Dense(
-        units=64, activation='selu'
+        units=64, activation='relu'
     )(x)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Dropout(0.4)(x)
 
     x = tf.keras.layers.Dense(
-        units=64, activation='selu'
+        units=64, activation='relu'
     )(x)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Dropout(0.4)(x)
 
     x = tf.keras.layers.Dense(
-        units=128, activation='selu'
+        units=128, activation='relu'
     )(x)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Dropout(0.4)(x)
@@ -139,7 +139,7 @@ def build_model(verbose=False, is_compile=True, **kwargs):
         [layer_dense_init, x]
     )
     layer_total_feats = tf.keras.layers.Dense(
-        units=64, activation='selu'
+        units=64, activation='relu'
     )(layer_total_feats)
     layer_total_feats = tf.keras.layers.BatchNormalization()(layer_total_feats)
     layer_total_feats = tf.keras.layers.Dropout(0.4)(layer_total_feats)
@@ -335,9 +335,21 @@ if __name__ == '__main__':
         str(np.round(y_val_score_df['val_pr_auc'].mean(), 6)).split('.')[1],
         str(np.round(y_val_score_df['val_roc_auc'].mean(), 6)).split('.')[1]
     )
-
     y_val_score_df.to_csv('../logs/{}.csv'.format(sub_file_name), index=False)
-    file_processor = LoadSave(dir_name='../models/')
-    file_processor.save_data(
-        file_name='{}.pkl'.format(sub_file_name),
-        data_file=[trained_model_list, decision_threshold_list])
+
+    # 保存模型文件与归一化器
+    if 'nn_models' not in os.listdir('../models/'):
+        os.mkdir('../models/{}'.format('nn_models'))
+
+    dir_name = '../models/nn_models/'
+    file_processor = LoadSave(dir_name=dir_name)
+    for fold, model in enumerate(trained_model_list):
+        # Save model
+        file_name = '{}fold_{}_nn_model'.format(dir_name, fold)
+        trained_model_list[fold].save(file_name)
+
+        # Save normalizer and threshold
+        file_processor.save_data(
+            file_name='fold_{}_nn_model_attachments.pkl'.format(fold),
+            data_file=[trained_normalizer_list[fold], decision_threshold_list[fold]]
+        )

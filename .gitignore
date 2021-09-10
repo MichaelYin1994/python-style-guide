@@ -4,3 +4,5 @@
 *.npz
 *.pyc
 *.hdf
+
+examples/kpi-anomaly-detection/models/*
